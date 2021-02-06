@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.maxy.caller.persistent.mapper.TaskBaseInfoMapper">
+  <resultMap id="BaseResultMap" type="com.maxy.caller.model.TaskBaseInfo">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="group_key" jdbcType="VARCHAR" property="groupKey" />
+    <result column="biz_key" jdbcType="VARCHAR" property="bizKey" />
+    <result column="topic" jdbcType="VARCHAR" property="topic" />
+    <result column="description" jdbcType="VARCHAR" property="description" />
+    <result column="alarm_email" jdbcType="VARCHAR" property="alarmEmail" />
+    <result column="executor_router_strategy" jdbcType="TINYINT" property="executorRouterStrategy" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, group_key, biz_key, topic, description, alarm_email, executor_router_strategy, 
+    create_time, update_time
+  </sql>
+  <select id="selectByExample" parameterType="com.maxy.caller.persistent.example.TaskBaseInfoExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from task_base_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from task_base_info
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from task_base_info
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.maxy.caller.persistent.example.TaskBaseInfoExample">
+    delete from task_base_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" keyColumn="id" keyProperty="id" parameterType="com.maxy.caller.model.TaskBaseInfo" useGeneratedKeys="true">
+    insert into task_base_info (group_key, biz_key, topic, 
+      description, alarm_email, executor_router_strategy, 
+      create_time, update_time)
+    values (#{groupKey,jdbcType=VARCHAR}, #{bizKey,jdbcType=VARCHAR}, #{topic,jdbcType=VARCHAR}, 
+      #{description,jdbcType=VARCHAR}, #{alarmEmail,jdbcType=VARCHAR}, #{executorRouterStrategy,jdbcType=TINYINT}, 
+      #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="com.maxy.caller.model.TaskBaseInfo" useGeneratedKeys="true">
+    insert into task_base_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="groupKey != null">
+        group_key,
+      </if>
+      <if test="bizKey != null">
+        biz_key,
+      </if>
+      <if test="topic != null">
+        topic,
+      </if>
+      <if test="description != null">
+        description,
+      </if>
+      <if test="alarmEmail != null">
+        alarm_email,
+      </if>
+      <if test="executorRouterStrategy != null">
+        executor_router_strategy,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="groupKey != null">
+        #{groupKey,jdbcType=VARCHAR},
+      </if>
+      <if test="bizKey != null">
+        #{bizKey,jdbcType=VARCHAR},
+      </if>
+      <if test="topic != null">
+        #{topic,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null">
+        #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="alarmEmail != null">
+        #{alarmEmail,jdbcType=VARCHAR},
+      </if>
+      <if test="executorRouterStrategy != null">
+        #{executorRouterStrategy,jdbcType=TINYINT},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.maxy.caller.persistent.example.TaskBaseInfoExample" resultType="java.lang.Long">
+    select count(*) from task_base_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update task_base_info
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=BIGINT},
+      </if>
+      <if test="record.groupKey != null">
+        group_key = #{record.groupKey,jdbcType=VARCHAR},
+      </if>
+      <if test="record.bizKey != null">
+        biz_key = #{record.bizKey,jdbcType=VARCHAR},
+      </if>
+      <if test="record.topic != null">
+        topic = #{record.topic,jdbcType=VARCHAR},
+      </if>
+      <if test="record.description != null">
+        description = #{record.description,jdbcType=VARCHAR},
+      </if>
+      <if test="record.alarmEmail != null">
+        alarm_email = #{record.alarmEmail,jdbcType=VARCHAR},
+      </if>
+      <if test="record.executorRouterStrategy != null">
+        executor_router_strategy = #{record.executorRouterStrategy,jdbcType=TINYINT},
+      </if>
+      <if test="record.createTime != null">
+        create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="record.updateTime != null">
+        update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update task_base_info
+    set id = #{record.id,jdbcType=BIGINT},
+      group_key = #{record.groupKey,jdbcType=VARCHAR},
+      biz_key = #{record.bizKey,jdbcType=VARCHAR},
+      topic = #{record.topic,jdbcType=VARCHAR},
+      description = #{record.description,jdbcType=VARCHAR},
+      alarm_email = #{record.alarmEmail,jdbcType=VARCHAR},
+      executor_router_strategy = #{record.executorRouterStrategy,jdbcType=TINYINT},
+      create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      update_time = #{record.updateTime,jdbcType=TIMESTAMP}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.maxy.caller.model.TaskBaseInfo">
+    update task_base_info
+    <set>
+      <if test="groupKey != null">
+        group_key = #{groupKey,jdbcType=VARCHAR},
+      </if>
+      <if test="bizKey != null">
+        biz_key = #{bizKey,jdbcType=VARCHAR},
+      </if>
+      <if test="topic != null">
+        topic = #{topic,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null">
+        description = #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="alarmEmail != null">
+        alarm_email = #{alarmEmail,jdbcType=VARCHAR},
+      </if>
+      <if test="executorRouterStrategy != null">
+        executor_router_strategy = #{executorRouterStrategy,jdbcType=TINYINT},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.maxy.caller.model.TaskBaseInfo">
+    update task_base_info
+    set group_key = #{groupKey,jdbcType=VARCHAR},
+      biz_key = #{bizKey,jdbcType=VARCHAR},
+      topic = #{topic,jdbcType=VARCHAR},
+      description = #{description,jdbcType=VARCHAR},
+      alarm_email = #{alarmEmail,jdbcType=VARCHAR},
+      executor_router_strategy = #{executorRouterStrategy,jdbcType=TINYINT},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

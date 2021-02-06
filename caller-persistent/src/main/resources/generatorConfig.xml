@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration PUBLIC
+        "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+        "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+
+<generatorConfiguration>
+    <!-- 指定数据库驱动的 jdbc 驱动 jar 包的位置 -->
+    <!-- 此时不需要，因为 jar 包已经在 classpath 中
+    <classPathEntry location="./mysql-connector-java-5.1.40.jar" />
+    -->
+
+    <context id="mysql" targetRuntime="MyBatis3" defaultModelType="flat">
+        <!-- 生成的 Java 文件的编码 -->
+        <property name="javaFileEncoding" value="UTF-8"/>
+        <!-- 格式化 Java 代码 -->
+        <property name="javaFormatter" value="org.mybatis.generator.api.dom.DefaultJavaFormatter"/>
+        <!-- 格式化 XML 代码 -->
+        <property name="xmlFormatter" value="org.mybatis.generator.api.dom.DefaultXmlFormatter"/>
+        <!--覆盖生成XML文件-->
+        <plugin type="org.mybatis.generator.plugins.UnmergeableXmlMappersPlugin"/>
+
+        <!-- 自定义注释生成器 -->
+        <commentGenerator type="com.maxy.caller.persistent.generator.MySQLCommentGenerator">
+            <property name="author" value="maxy"/>
+            <!--<property name="dateFormat" value="yyyy/MM/dd"/>-->
+            <property name="suppressAllComments" value="true"/><!-- 是否取消注释 -->
+            <property name="suppressDate" value="true"/> <!-- 是否生成注释代时间戳-->
+            <property name="addRemarkComments" value="true"/>
+        </commentGenerator>
+
+        <!-- 配置数据库连接 -->
+        <jdbcConnection driverClass="com.mysql.jdbc.Driver"
+                        connectionURL="jdbc:mysql://localhost:3306/caller?characterEncoding=utf-8"
+                        userId="root"
+                        password="rootroot">
+            <!-- 设置 useInformationSchema 属性为 true -->
+            <property name="useInformationSchema" value="true"/>
+        </jdbcConnection>
+
+        <!-- 生成实体的位置 -->
+        <javaModelGenerator targetPackage="com.maxy.caller.model"
+                            targetProject="src/main/java">
+            <property name="enableSubPackages" value="true"/>
+        </javaModelGenerator>
+
+        <!-- 生成 Mapper XML 的位置 -->
+        <sqlMapGenerator targetPackage="com.maxy.caller.persistent.mapper"
+                         targetProject="src/main/java">
+            <property name="enableSubPackages" value="true"/>
+        </sqlMapGenerator>
+
+        <!-- 生成 Mapper 接口的位置 -->
+        <javaClientGenerator type="XMLMAPPER"
+                             targetPackage="com.maxy.caller.persistent.mapper"
+                             targetProject="src/main/java">
+            <property name="enableSubPackages" value="true"/>
+        </javaClientGenerator>
+
+        <!--生成对应表及类名-->
+        <table tableName="task_registry">
+            <generatedKey column="id" sqlStatement="JDBC"/>
+        </table>
+
+        <table tableName="task_group">
+            <generatedKey column="id" sqlStatement="JDBC"/>
+        </table>
+        <!-- <table tableName="task_info">
+             <generatedKey column="id" sqlStatement="JDBC"/>
+         </table>-->
+
+       <!-- <table tableName="task_log">
+            <generatedKey column="id" sqlStatement="JDBC"/>
+            <columnOverride column="executor_result_msg" javaType="java.lang.String" jdbcType="VARCHAR"/>
+        </table>-->
+    </context>
+
+</generatorConfiguration>
