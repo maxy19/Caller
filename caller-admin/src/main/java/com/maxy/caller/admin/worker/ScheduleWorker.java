@@ -129,17 +129,17 @@ public class ScheduleWorker implements AdminWorker {
         log.info("addCacheQueue#nodeMap:{}", nodeMap);
         List<DictionaryIndexData> filter = filter(preReadInfoList);
         filter.forEach(indexData -> {
-            long mapping = indexData.getTime() & nodeMap.size() / 2;
-            //key:value=group+biz+topic:time:{0}
-            cacheService.lpush(DICTIONARY_INDEX.getKey(), INDEX_DATA_FORMAT.join(indexData.getKey(), mapping, indexData.getTime()));
+            long slot = indexData.getTime() & nodeMap.size() / 2;
+            //key:value=group+biz+topic:time:{slot}
+            cacheService.lpush(DICTIONARY_INDEX.getKey(), INDEX_DATA_FORMAT.join(indexData.getKey(), indexData.getTime(), slot));
         });
 
         preReadInfoList.forEach(taskDetailInfoBO -> {
             String uniqueId = getUniqueName(taskDetailInfoBO);
             long time = taskDetailInfoBO.getExecutionTime().getTime();
             //消除bigKey则将队列通过{node-1}分片 打散映射
-            long mapping = time & nodeMap.size() / 2;
-            cacheService.zadd(ZSET_FORMAT.join(uniqueId, mapping), (double) time, JSONUtils.toJSONString(taskDetailInfoBO));
+            long slot = time & nodeMap.size() / 2;
+            cacheService.zadd(ZSET_FORMAT.join(uniqueId, slot), (double) time, JSONUtils.toJSONString(taskDetailInfoBO));
         });
     }
 

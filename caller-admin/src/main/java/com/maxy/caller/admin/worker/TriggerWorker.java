@@ -1,5 +1,6 @@
 package com.maxy.caller.admin.worker;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.maxy.caller.admin.cache.CacheService;
@@ -42,6 +43,7 @@ import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_SUCCEED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXPIRED;
 import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX;
+import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX_BACKUP;
 import static com.maxy.caller.core.utils.CallerUtils.parse;
 
 /**
@@ -92,7 +94,9 @@ public class TriggerWorker implements AdminWorker {
             //从redis获取所有管道并删除
             Date currentDate = new Date();
             //获取索引列表
-            List<Object> indexData = cacheService.getIndexData(DICTIONARY_INDEX.getKey(), adminConfigCenter.getIndexLimitNum());
+            List<String> keys = ImmutableList.of(DICTIONARY_INDEX.getKey(), DICTIONARY_INDEX_BACKUP.getKey());
+            List<String> indexArgs = ImmutableList.of("0", adminConfigCenter.getIndexLimitNum());
+            List<Object> indexData = cacheService.getIndexData(keys, indexArgs);
             Long length = (Long) indexData.get(0);
             indexData.remove(0);
             log.info("pop#索引数量:{}", length);

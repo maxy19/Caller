@@ -46,17 +46,18 @@ public class CacheService {
         return jedisCluster.lpush(key, value);
     }
 
-    public List<Object> getIndexData(String key, String limit) {
-        String indexScript = " local result = {} " +
-                " local list = redis.call('LRANGE',KEYS[1],0,ARGV[1]) " +
-                " result[1] = #list " +
-                " for i, key in pairs(list) do " +
-                "   local groupName = redis.call('RPOPLPUSH',list,KEY[1],'_backup') " +
-                "   table.insert(result,i+1,groupName) " +
-                " end " +
-                " return result ";
+    public List<Object> getIndexData(List<String> keys, List<String> args) {
+        String indexScript =
+                " local result = {} " +
+                        " local list = redis.call('LRANGE' , KEYS[1] , ARGV[1] , ARGV[2]) " +
+                        " result[1] = #list " +
+                        " result[2] = list " +
+                        " for i = 1, #list do " +
+                        "  redis.call('RPOPLPUSH',list, KEYS[2]) " +
+                        " end " +
+                        " return result ";
         log.debug("indexScript:{}", indexScript);
-        return (List) jedisCluster.eval(indexScript, ImmutableList.of(key), ImmutableList.of(limit));
+        return (List) jedisCluster.eval(indexScript, keys, args);
     }
 
     public List<Object> getQueueData(String key, List<String> args) {
@@ -67,7 +68,7 @@ public class CacheService {
                         //填充索引在下标1的位置
                         //"result[1]=member " +
                         //遍历索引
-                        "for i, key in pairs(member) do " +
+                        " for i, key in pairs(member) do " +
                         //从原始zSet获取数据
                         "  local valueArr = redis.call('ZRANGEBYSCORE',key,ARGV[1],ARGV[2],ARGV[3],ARGV[4],ARGV[5]) " +
                         //放到备份队列

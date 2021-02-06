@@ -8,7 +8,8 @@ import java.util.Objects;
  **/
 public enum GenerateKeyEnum {
 
-    DICTIONARY_INDEX("caller:dictionary:index:list"),
+    DICTIONARY_INDEX("caller:dic:index"),
+    DICTIONARY_INDEX_BACKUP("caller:dic:index:backup"),
     INDEX_DATA_FORMAT("caller:%s:%s:zset:{%s}"),
     ZSET_FORMAT("caller:%s:zset:{%s}"),
     ;
