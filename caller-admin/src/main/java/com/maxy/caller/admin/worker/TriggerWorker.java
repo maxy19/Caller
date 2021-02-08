@@ -1,6 +1,6 @@
 package com.maxy.caller.admin.worker;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.maxy.caller.admin.cache.CacheService;
@@ -30,7 +30,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -42,8 +41,7 @@ import java.util.concurrent.TimeUnit;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_SUCCEED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXPIRED;
-import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX;
-import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX_BACKUP;
+import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX_FORMAT;
 import static com.maxy.caller.core.utils.CallerUtils.parse;
 
 /**
@@ -91,36 +89,39 @@ public class TriggerWorker implements AdminWorker {
 
     private void pop() {
         try {
-            //从redis获取所有管道并删除
-            Date currentDate = new Date();
+            int size = cacheService.getNodeMap().size();
             //获取索引列表
-            List<String> keys = ImmutableList.of(DICTIONARY_INDEX.getKey(), DICTIONARY_INDEX_BACKUP.getKey());
-            List<String> indexArgs = ImmutableList.of("0", adminConfigCenter.getIndexLimitNum());
-            List<Object> indexData = cacheService.getIndexData(keys, indexArgs);
-            Long length = (Long) indexData.get(0);
-            indexData.remove(0);
-            log.info("pop#索引数量:{}", length);
-            List<String> groupName = new ArrayList<>();
-            for (Object indexDatum : indexData) {
-                if (indexDatum != null) {
-                    groupName.add(String.valueOf(indexDatum));
+            Date currentDate = new Date();
+            for (int i = 0, length = size / 2; i < length; i++) {
+                List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_FORMAT.join(i));
+                List<String> args = Arrays.asList("10",
+                                                  String.valueOf(DateUtils.addSecond(currentDate, -1).getTime()),
+                                                  String.valueOf(DateUtils.addDays(currentDate, 5).getTime()),
+                                                  "LIMIT", "0", adminConfigCenter.getLimitNum());
+                List<Object> queueData = cacheService.getQueueData(keys, args);
+                queueData.forEach(element -> {
+                    List<String> values = (List<String>) element;
+                });
+            }
+         /*   for (int i = 0, length = cacheService.getNodeMap().size() / 2; i < length; i++) {
+                String key = "";
+                for (Object element : indexData) {
+                    key = element + ":{" + i + "}";
+                    //获取参数
+                    Date currentDate = new Date();
+                    List<String> args = Arrays.asList(String.valueOf(DateUtils.addSecond(currentDate, -1).getTime()),
+                            String.valueOf(DateUtils.addDays(currentDate, 5).getTime()),
+                            "LIMIT", "0", adminConfigCenter.getLimitNum());
+                    //获取队列数据[0]索引数组
+                    List<Object> queueData = cacheService.getQueueData(ImmutableList.of(key), args);
+                    if (CollectionUtils.isEmpty(queueData)) {
+                        log.warn("pop#队列上没有找到要处理的数据!");
+                        return;
+                    }
+                    //循环执行
+                    invokeAll(queueData);
                 }
-            }
-            //获取参数
-            List<String> args = Arrays.asList(String.valueOf(DateUtils.addSecond(currentDate, -1).getTime()), String.valueOf(DateUtils.addDays(currentDate, 5).getTime()), "LIMIT", "0", adminConfigCenter.getLimitNum());
-            //获取队列数据[0]索引数组
-            List<Object> queueData = cacheService.getQueueData(DICTIONARY_INDEX.getKey(), args);
-            if (CollectionUtils.isEmpty(queueData)) {
-                log.warn("pop#队列上没有找到要处理的数据!");
-                return;
-            }
-            //执行成功更新taskDetail的表
-            List<String> indexList = (List<String>) queueData.get(0);
-            if (CollectionUtils.isEmpty(indexList)) {
-                log.warn("pop#没有找到索引!!");
-            }
-            //循环执行
-            invokeAll(queueData);
+            }*/
         } catch (Exception e) {
             log.error("pop#执行出队时发现异常!!", e);
         }

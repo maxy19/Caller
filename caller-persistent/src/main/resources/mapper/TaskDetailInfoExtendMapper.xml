@@ -114,7 +114,7 @@
         </if>
     </select>
     <update id="updateStatusByIds" parameterType="com.maxy.caller.persistent.example.TaskDetailInfoExample">
-        update task_detail_info set execution_status = #{targetStatus} where id in
+        update task_detail_info set execution_status = #{targetStatus} , update_time = now() where id in
         <foreach item="item" index="index" collection="ids" open="(" separator="," close=")">
             #{item}
         </foreach>

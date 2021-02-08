@@ -1,6 +1,5 @@
 package com.maxy.caller.admin.cache;
 
-import com.google.common.collect.ImmutableList;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.JedisCluster;
@@ -42,45 +41,24 @@ public class CacheService {
         return jedisCluster.sadd(key, value);
     }
 
-    public Long lpush(String key, String value) {
+    public Long lpush(String key, String... value) {
         return jedisCluster.lpush(key, value);
     }
 
-    public List<Object> getIndexData(List<String> keys, List<String> args) {
-        String indexScript =
-                " local result = {} " +
-                        " local list = redis.call('LRANGE' , KEYS[1] , ARGV[1] , ARGV[2]) " +
-                        " result[1] = #list " +
-                        " result[2] = list " +
-                        " for i = 1, #list do " +
-                        "  redis.call('RPOPLPUSH',list, KEYS[2]) " +
-                        " end " +
-                        " return result ";
-        log.debug("indexScript:{}", indexScript);
-        return (List) jedisCluster.eval(indexScript, keys, args);
-    }
 
-    public List<Object> getQueueData(String key, List<String> args) {
-        String scriptWithDelayNum =
-                "local result = {} " +
-                        //获取需要执行的字典索引
-                        //"local member = redis.call('SMEMBERS', KEYS[1]) " +
-                        //填充索引在下标1的位置
-                        //"result[1]=member " +
-                        //遍历索引
-                        " for i, key in pairs(member) do " +
-                        //从原始zSet获取数据
-                        "  local valueArr = redis.call('ZRANGEBYSCORE',key,ARGV[1],ARGV[2],ARGV[3],ARGV[4],ARGV[5]) " +
-                        //放到备份队列
-                        "  redis.call('LPUSH',key,'_backup',valueArr) " +
-                        //删除原队列
-                        "  redis.call('ZREM',key,value) " +
-                        //填充返回值在大于1的位置
-                        "  table.insert(result,i+1,valueArr)  " +
-                        "end " +
-                        " return result ";
-        log.debug("scriptWithDelayNum:{}", scriptWithDelayNum);
-        return (List) jedisCluster.eval(scriptWithDelayNum, ImmutableList.of(key), args);
+    public List<Object> getQueueData(List<String> keys, List<String> args) {
+        String script = "local result = {}\n" +
+                "local length = ARGV[1]\n" +
+                "for i = 1, tonumber(length) do\n" +
+                "    local key = redis.call('RPOP', KEYS[1])\n" +
+                "    if (key) then\n" +
+                "        local values = redis.call('ZRANGEBYSCORE', key, ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6])\n" +
+                "        result[i] = values\n" +
+                "    end\n" +
+                "end\n" +
+                "return result";
+        log.debug("script:{}", script);
+        return (List) jedisCluster.eval(script, keys, args);
     }
 
     public Set<Tuple> zrangeByScoreWithScores(String key, double min, double max) {

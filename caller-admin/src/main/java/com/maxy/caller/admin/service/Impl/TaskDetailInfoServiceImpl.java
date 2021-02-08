@@ -121,7 +121,6 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
 
     @Override
     public boolean updateStatusByIds(List<Long> ids, Byte sourceStatus, Byte targetStatus) {
-        TaskDetailInfoExample example = new TaskDetailInfoExample();
         return taskDetailInfoExtendMapper.updateStatusByIds(ids, targetStatus, sourceStatus) > 0;
     }
 
