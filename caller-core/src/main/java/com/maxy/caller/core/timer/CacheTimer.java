@@ -26,7 +26,7 @@ public class CacheTimer {
                 thread.setName("timer-wheel-thread-pool-" + threadCount.incrementAndGet());
                 return thread;
             }
-        }, 100L, TimeUnit.MILLISECONDS, 512);
+        }, 100L, TimeUnit.MILLISECONDS, 1024);
     }
     public static CacheTimer getInstance() {
         return Instance.cacheTimer;

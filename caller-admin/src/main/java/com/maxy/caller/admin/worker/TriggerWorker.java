@@ -79,7 +79,7 @@ public class TriggerWorker implements AdminWorker {
                 try {
                     pop();
                     //打散时间
-                    TimeUnit.DAYS.sleep(1);
+                    TimeUnit.SECONDS.sleep(10);
                 } catch (Exception e) {
                     log.error("队列获取数据出现异常", e);
                 }
@@ -89,42 +89,35 @@ public class TriggerWorker implements AdminWorker {
 
     private void pop() {
         try {
-            int size = cacheService.getNodeMap().size();
+            String json = "{\"id\":2,\"groupKey\":\"taobao\",\"bizKey\":\"order\",\"topic\":\"clsExpireOrder\",\"executionParam\":\"你好测试成功!!\",\"executionTime\":\"2021-02-09 18:16:45\",\"executionStatus\":1,\"timeout\":3000,\"retryNum\":1}\n";
+            TaskDetailInfoBO taskDetailInfoBO = JSONUtils.parseObject(json, TaskDetailInfoBO.class);
+            remoteClientMethod(taskDetailInfoBO);
+          /*  int size = cacheService.getNodeMap().size();
             //获取索引列表
             Date currentDate = new Date();
-            for (int i = 0, length = size / 2; i < length; i++) {
-                List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_FORMAT.join(i));
-                List<String> args = Arrays.asList("10",
-                                                  String.valueOf(DateUtils.addSecond(currentDate, -1).getTime()),
-                                                  String.valueOf(DateUtils.addDays(currentDate, 5).getTime()),
-                                                  "LIMIT", "0", adminConfigCenter.getLimitNum());
-                List<Object> queueData = cacheService.getQueueData(keys, args);
-                queueData.forEach(element -> {
-                    List<String> values = (List<String>) element;
-                });
-            }
-         /*   for (int i = 0, length = cacheService.getNodeMap().size() / 2; i < length; i++) {
-                String key = "";
-                for (Object element : indexData) {
-                    key = element + ":{" + i + "}";
-                    //获取参数
-                    Date currentDate = new Date();
-                    List<String> args = Arrays.asList(String.valueOf(DateUtils.addSecond(currentDate, -1).getTime()),
-                            String.valueOf(DateUtils.addDays(currentDate, 5).getTime()),
-                            "LIMIT", "0", adminConfigCenter.getLimitNum());
-                    //获取队列数据[0]索引数组
-                    List<Object> queueData = cacheService.getQueueData(ImmutableList.of(key), args);
-                    if (CollectionUtils.isEmpty(queueData)) {
-                        log.warn("pop#队列上没有找到要处理的数据!");
-                        return;
-                    }
-                    //循环执行
-                    invokeAll(queueData);
-                }
+            for (int index = 0, length = size / 2; index < length; index++) {
+                //循环执行
+                invokeAll(getQueueData(currentDate, index));
             }*/
         } catch (Exception e) {
             log.error("pop#执行出队时发现异常!!", e);
         }
+    }
+
+    /**
+     * lua执行redis获取数据
+     *
+     * @param currentDate
+     * @param index
+     * @return
+     */
+    private List<Object> getQueueData(Date currentDate, int index) {
+        List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_FORMAT.join(index));
+        List<String> args = Arrays.asList("10",//length
+                String.valueOf(DateUtils.addSecond(currentDate, -1).getTime()),
+                String.valueOf(DateUtils.addDays(currentDate, 5).getTime()),
+                "LIMIT", "0", adminConfigCenter.getLimitNum());
+        return cacheService.getQueueData(keys, args);
     }
 
     /**
@@ -148,17 +141,17 @@ public class TriggerWorker implements AdminWorker {
      *
      * @param queueData
      */
-    private void invokeAll(List<Object> queueData) throws InterruptedException {
-        for (int i = 1; i < queueData.size(); i++) {
+    private void invokeAll(List<Object> queueData) {
+        for (int i = 0, length = queueData.size(); i < length; i++) {
             List<String> zSetList = (List<String>) queueData.get(i);
             for (String element : zSetList) {
                 TaskDetailInfoBO taskDetailInfoBO = JSONUtils.parseObject(element, TaskDetailInfoBO.class);
                 if (checkExpireTaskInfo(taskDetailInfoBO)) {
                     continue;
                 }
-                cacheTimer.newTimeout(timeout -> {
+               // cacheTimer.newTimeout(timeout -> {
                     remoteClientMethod(taskDetailInfoBO);
-                }, taskDetailInfoBO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+                //}, taskDetailInfoBO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -173,7 +166,7 @@ public class TriggerWorker implements AdminWorker {
         String strategyName = cacheService.get(getUniqueName(taskDetailInfoBO));
         if (StringUtils.isBlank(strategyName)) {
             TaskBaseInfoBO taskBaseInfoBO = taskBaseInfoService.getByUniqueKey(taskDetailInfoBO.getGroupKey(), taskDetailInfoBO.getBizKey(), taskDetailInfoBO.getTopic());
-            cacheService.set(getGroupName(taskBaseInfoBO), 3600, taskBaseInfoBO.getExecutorRouterStrategy().toString());
+            cacheService.set(getUniqueName(taskBaseInfoBO), 3600, taskBaseInfoBO.getExecutorRouterStrategy().toString());
             return taskBaseInfoBO.getExecutorRouterStrategy();
         }
         return Byte.valueOf(strategyName);
@@ -188,11 +181,11 @@ public class TriggerWorker implements AdminWorker {
     private void remoteClientMethod(TaskDetailInfoBO taskDetailInfoBO) {
         //netty call client
         listeningWorker.execute(() -> {
-            List<Channel> channels = nettyServerHelper.getActiveChannel().get(TriggerWorker.this.getUniqueName(taskDetailInfoBO));
+            List<Channel> channels = nettyServerHelper.getActiveChannel().get(getGroupName(taskDetailInfoBO));
             if (CollectionUtils.isEmpty(channels)) {
                 return;
             }
-            String remoteAddr = RouterStrategyEnum.get(TriggerWorker.this.getExecutorRouterStrategy(taskDetailInfoBO), parse(channels));
+            String remoteAddr = RouterStrategyEnum.get(getExecutorRouterStrategy(taskDetailInfoBO), parse(channels));
             //调用远程触发客户端
             if (CollectionUtils.isNotEmpty(channels)) {
                 CallerTaskDTO callerTaskDTO = new CallerTaskDTO();

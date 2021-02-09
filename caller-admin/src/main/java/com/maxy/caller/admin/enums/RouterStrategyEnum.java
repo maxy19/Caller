@@ -18,14 +18,14 @@ import java.util.function.Function;
 public enum RouterStrategyEnum {
 
 
-    ROUND(1, ((addresses) -> {
+    ROUND((byte) 1, ((addresses) -> {
         AtomicInteger index = new RoundRobinHelper().getIndex();//索引：指定开始位置
         String address = Strings.EMPTY;
         for (int i = 0; i < addresses.size(); i++) {
             int nextIndex = index.incrementAndGet() % addresses.size();
             index = new AtomicInteger(nextIndex);
+            address = addresses.get(index.get());
             if (index.get() == addresses.size()) {
-                address = addresses.get(index.get());
                 index.set(-1);
             }
             return address;
@@ -33,27 +33,27 @@ public enum RouterStrategyEnum {
         return null;
     })),
 
-    RANDOM(2, (addresses -> {
+    RANDOM((byte) 2, (addresses -> {
         Collections.shuffle(addresses);
         return addresses.get(0);
     })),
 
-    HASH(3, (address -> {
+    HASH((byte) 3, (address -> {
         return RouterStrategyHelper.getInstance(address).get(address.get(0));
     })),
 
-    FIRST(4, (addresses -> {
+    FIRST((byte) 4, (addresses -> {
         return addresses.get(0);
     })),
 
-    LAST(5, (addresses -> {
+    LAST((byte) 5, (addresses -> {
         return addresses.get(CollectionUtils.size(addresses) - 1);
     }));
 
-    private Integer code;
+    private Byte code;
     private Function<List<String>, String> function;
 
-    RouterStrategyEnum(Integer code, Function<List<String>, String> function) {
+    RouterStrategyEnum(Byte code, Function<List<String>, String> function) {
         this.code = code;
         this.function = function;
     }
@@ -66,7 +66,6 @@ public enum RouterStrategyEnum {
         }
         return null;
     }
-
 }
 
 @Data

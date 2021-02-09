@@ -1,11 +1,14 @@
 package com.maxy.caller.core.utils;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.TreeMultimap;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.pojo.DictionaryIndexData;
 import io.netty.channel.Channel;
+import org.apache.commons.collections.CollectionUtils;
 
 import java.net.SocketAddress;
+import java.util.Collections;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.stream.Collectors;
@@ -63,7 +66,12 @@ public class CallerUtils {
         }).collect(Collectors.toList());
     }
 
-
+    public static List<String> filterIp(List<String> addresses) {
+        if (CollectionUtils.isNotEmpty(addresses)) {
+            return addresses.stream().map(ele -> Splitter.on(":").splitToList(ele).get(0)).collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
 
 
 }

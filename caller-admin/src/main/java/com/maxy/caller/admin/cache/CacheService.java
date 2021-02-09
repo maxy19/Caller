@@ -33,14 +33,6 @@ public class CacheService {
         return jedisCluster.zadd(key, score, member);
     }
 
-    public Long zadd(String key, Map<String, Double> scoreMembers) {
-        return jedisCluster.zadd(key, scoreMembers);
-    }
-
-    public Long sadd(String key, String value) {
-        return jedisCluster.sadd(key, value);
-    }
-
     public Long lpush(String key, String... value) {
         return jedisCluster.lpush(key, value);
     }
@@ -49,11 +41,18 @@ public class CacheService {
     public List<Object> getQueueData(List<String> keys, List<String> args) {
         String script = "local result = {}\n" +
                 "local length = ARGV[1]\n" +
+                "local backupQueue = KEYS[1] .. ':backup'\n" +
                 "for i = 1, tonumber(length) do\n" +
                 "    local key = redis.call('RPOP', KEYS[1])\n" +
                 "    if (key) then\n" +
                 "        local values = redis.call('ZRANGEBYSCORE', key, ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6])\n" +
-                "        result[i] = values\n" +
+                "        if (#values > 0) then\n" +
+                "            for j, v in ipairs(values) do\n" +
+                "                local backupValue = redis.call('LPUSH', backupQueue, v);\n" +
+                "                redis.call('ZREM', key, v)\n" +
+                "            end\n" +
+                "            result[i] = values\n" +
+                "        end\n" +
                 "    end\n" +
                 "end\n" +
                 "return result";
@@ -63,14 +62,6 @@ public class CacheService {
 
     public Set<Tuple> zrangeByScoreWithScores(String key, double min, double max) {
         return jedisCluster.zrangeByScoreWithScores(key, min, max);
-    }
-
-    public Set<String> smembers(String key) {
-        return jedisCluster.smembers(key);
-    }
-
-    public Long zrem(String key, String... member) {
-        return jedisCluster.zrem(key, member);
     }
 
     public Long expire(String key, int expireTime) {

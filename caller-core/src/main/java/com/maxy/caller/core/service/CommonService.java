@@ -16,6 +16,10 @@ public interface CommonService {
         return String.join(":", taskBaseInfoBO.getGroupKey(), taskBaseInfoBO.getBizKey());
     }
 
+    default String getGroupName(TaskDetailInfoBO taskDetailInfoBO) {
+        return String.join(":", taskDetailInfoBO.getGroupKey(), taskDetailInfoBO.getBizKey());
+    }
+
     default String getUniqueName(TaskBaseInfoBO taskBaseInfoBO) {
         return String.join(":", taskBaseInfoBO.getGroupKey(), taskBaseInfoBO.getBizKey(), taskBaseInfoBO.getTopic());
     }

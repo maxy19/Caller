@@ -4,11 +4,28 @@
 --- DateTime: 2021/1/18 11:27
 ---
 
+
 local result = {}
-local list = redis.call('LRANGE', KEYS[1], 0, ARGV[1])
-result[1] = #list
-for i, key in pairs(list) do
-    local groupName = redis.call('RPOPLPUSH', list, KEY[1], '_backup')
-    table.insert(result, i + 1, groupName)
+local length = ARGV[1]
+local backupQueue = KEYS[1] .. ':backup'
+for i = 1, tonumber(length) do
+    local key = redis.call('RPOP', KEYS[1])
+    if (key) then
+        local values = redis.call('ZRANGEBYSCORE', key, ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6])
+        if (#values > 0) then
+            for j, v in ipairs(values) do
+                local backupValue = redis.call('LPUSH', backupQueue, v);
+                redis.call('ZREM', key, v)
+            end
+            result[i] = values
+        end
+    end
 end
 return result
+
+
+
+
+
+
+

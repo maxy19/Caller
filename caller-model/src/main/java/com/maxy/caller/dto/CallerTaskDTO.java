@@ -2,12 +2,12 @@ package com.maxy.caller.dto;
 
 import com.maxy.caller.common.utils.JSONUtils;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Date;
 
 /**
  * 服务端通知客户端执行
+ *
  * @author maxy
  */
 @Data
@@ -34,8 +34,8 @@ public class CallerTaskDTO {
      */
     private Date executionTime;
 
-    public String getUniqueKey(){
-        return StringUtils.join(groupKey,bizKey,topic,":");
+    public String getUniqueKey() {
+        return String.join(":", groupKey, bizKey, topic);
     }
 
 

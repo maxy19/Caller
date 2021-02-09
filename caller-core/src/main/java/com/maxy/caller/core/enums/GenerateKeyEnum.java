@@ -9,6 +9,7 @@ import java.util.Objects;
 public enum GenerateKeyEnum {
 
     DICTIONARY_INDEX_FORMAT("caller:dic:index:{%s}"),
+    DICTIONARY_INDEX_BACKUP_FORMAT("caller:dic:index:{%s}:backup"),
     INDEX_DATA_FORMAT("caller:%s:zset:{%s}"),
     ZSET_QUEUE_FORMAT("caller:%s:zset:{%s}"),
     ;
