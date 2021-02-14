@@ -3,6 +3,8 @@ package com.maxy.caller.core.utils;
 import com.google.common.base.Splitter;
 import com.google.common.collect.TreeMultimap;
 import com.maxy.caller.bo.TaskDetailInfoBO;
+import com.maxy.caller.common.utils.IpUtils;
+import com.maxy.caller.common.utils.MD5EncryptUtil;
 import com.maxy.caller.pojo.DictionaryIndexData;
 import io.netty.channel.Channel;
 import org.apache.commons.collections.CollectionUtils;
@@ -71,6 +73,10 @@ public class CallerUtils {
             return addresses.stream().map(ele -> Splitter.on(":").splitToList(ele).get(0)).collect(Collectors.toList());
         }
         return Collections.emptyList();
+    }
+
+    public static String getReqId() {
+        return MD5EncryptUtil.encrypt(System.nanoTime() + IpUtils.getIp());
     }
 
 

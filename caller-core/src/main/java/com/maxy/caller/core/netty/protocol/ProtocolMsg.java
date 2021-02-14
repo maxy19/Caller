@@ -15,6 +15,8 @@ import lombok.Data;
 
 import java.util.List;
 
+import static com.maxy.caller.core.utils.CallerUtils.getReqId;
+
 
 /**
  * 说明：消息对象
@@ -27,6 +29,7 @@ import java.util.List;
 public class ProtocolMsg<T> {
 
     private ProtocolHeader protocolHeader;
+    private String requestId = getReqId();
     private EventEnum eventEnum;
     private T body;
 
@@ -43,7 +46,7 @@ public class ProtocolMsg<T> {
      * @return
      */
     public static ProtocolMsg toEntity(RegConfigInfo regConfigInfo) {
-        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg(EventEnum.REGISTRY);
+        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(EventEnum.REGISTRY);
         //set regConfigInfo
         RpcRequestDTO rpcRequestDTO = new RpcRequestDTO();
         rpcRequestDTO.setRegConfigInfo(regConfigInfo);
@@ -61,7 +64,7 @@ public class ProtocolMsg<T> {
      * @return
      */
     public static ProtocolMsg toEntity(String body) {
-        ProtocolMsg<String> protocolMsg = new ProtocolMsg(EventEnum.MESSAGE);
+        ProtocolMsg<String> protocolMsg = new ProtocolMsg<>(EventEnum.MESSAGE);
         //set header
         protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(body));
         //set body
@@ -75,7 +78,7 @@ public class ProtocolMsg<T> {
      * @return
      */
     public static ProtocolMsg toEntity(Long timeMillis, String uniqName) {
-        ProtocolMsg<Pinger> protocolMsg = new ProtocolMsg(EventEnum.PINGER);
+        ProtocolMsg<Pinger> protocolMsg = new ProtocolMsg<>(EventEnum.PINGER);
         Pinger pinger = Pinger.builder().requestTime(timeMillis).uniqueName(uniqName).build();
         //set header
         protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(pinger));
@@ -90,7 +93,7 @@ public class ProtocolMsg<T> {
      * @return
      */
     public static ProtocolMsg toEntity(ResultDTO resultDTO, CallerTaskDTO callerTaskDTO) {
-        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg(EventEnum.RESULT);
+        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(EventEnum.RESULT);
         //set resultDTO
         RpcRequestDTO rpcRequestDTO = new RpcRequestDTO();
         rpcRequestDTO.setResultDTO(resultDTO);
@@ -108,7 +111,7 @@ public class ProtocolMsg<T> {
      * @return
      */
     public static ProtocolMsg toEntity(CallerTaskDTO task) {
-        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg(EventEnum.EXECUTE);
+        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(EventEnum.EXECUTE);
         //set regConfigInfo
         RpcRequestDTO rpcRequestDTO = new RpcRequestDTO();
         rpcRequestDTO.setCallerTaskDTO(task);
@@ -125,7 +128,7 @@ public class ProtocolMsg<T> {
      * @return
      */
     public static ProtocolMsg toEntity(List<DelayTask> delayTasks) {
-        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg(EventEnum.DELAYTASK);
+        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(EventEnum.DELAYTASK);
         //set regConfigInfo
         RpcRequestDTO rpcRequestDTO = new RpcRequestDTO();
         rpcRequestDTO.setDelayTasks(delayTasks);

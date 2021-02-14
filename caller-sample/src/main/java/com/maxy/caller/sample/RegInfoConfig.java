@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RegInfoConfig {
 
-    @Value("${caller.reg.remote.ip:10.220.12.90}")
+    @Value("${caller.reg.remote.ip:10.221.36.5}")
     private String remoteIp;
 
     @Value("${caller.reg.remote.port:8888}")

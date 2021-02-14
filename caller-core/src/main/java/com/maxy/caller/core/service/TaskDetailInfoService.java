@@ -3,7 +3,6 @@ package com.maxy.caller.core.service;
 import com.github.pagehelper.PageInfo;
 import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskDetailInfoBO;
-import com.maxy.caller.model.TaskDetailInfo;
 
 import java.util.Date;
 import java.util.List;
@@ -19,7 +18,7 @@ public interface TaskDetailInfoService extends CommonService {
 
     Boolean update(TaskDetailInfoBO taskDetailInfoBO);
 
-    Boolean detele(Long taskInfoId);
+    Boolean delete(Long taskInfoId);
 
     TaskDetailInfoBO getByInfoId(Long taskInfoId);
 
@@ -27,10 +26,9 @@ public interface TaskDetailInfoService extends CommonService {
 
     boolean batchInsert(List<TaskDetailInfoBO> taskDetailInfoBOList);
 
-
     boolean updateStatusByIds(List<Long> ids, Byte sourceStatus, Byte targetStatus);
 
     List<TaskDetailInfoBO> getTaskDetailList(String groupKey, String bizKey, String topic);
 
-    TaskDetailInfo get(String groupKey, String bizKey, String topic, Date executionTime);
+    TaskDetailInfoBO get(String groupKey, String bizKey, String topic, Date executionTime);
 }

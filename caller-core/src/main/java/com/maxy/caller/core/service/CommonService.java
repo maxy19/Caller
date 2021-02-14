@@ -23,4 +23,9 @@ public interface CommonService {
     default String getUniqueName(TaskBaseInfoBO taskBaseInfoBO) {
         return String.join(":", taskBaseInfoBO.getGroupKey(), taskBaseInfoBO.getBizKey(), taskBaseInfoBO.getTopic());
     }
+
+    String ALARM_EMAIL = "alarmEmail";
+    String STRATEGY_VALUE = "strategyValue";
+    int ONE_MINUTE = 60;
+    int ONE_HOUR = ONE_MINUTE * 60;
 }

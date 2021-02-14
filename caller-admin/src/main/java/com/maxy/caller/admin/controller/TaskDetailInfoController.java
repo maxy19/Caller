@@ -46,7 +46,7 @@ public class TaskDetailInfoController {
         return FacadeTemplate.execute(ExecuteLog.newEntity("delete", taskDetailId), () -> {
         }, () -> {
             Map<String, Boolean> map = Maps.newHashMap();
-            map.put("result", taskDetailInfoService.detele(taskDetailId));
+            map.put("result", taskDetailInfoService.delete(taskDetailId));
             return Response.getSuccessResponse(map);
         });
     }

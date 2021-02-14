@@ -16,6 +16,7 @@ import com.maxy.caller.persistent.mapper.TaskDetailInfoExtendMapper;
 import com.maxy.caller.persistent.mapper.TaskGroupMapper;
 import com.maxy.caller.pojo.Pagination;
 import org.apache.commons.collections.CollectionUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -76,7 +77,7 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     }
 
     @Override
-    public Boolean detele(Long taskDetailInfoId) {
+    public Boolean delete(Long taskDetailInfoId) {
         return taskDetailInfoExtendMapper.deleteByPrimaryKey(taskDetailInfoId) > 0;
     }
 
@@ -133,13 +134,15 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     }
 
     @Override
-    public TaskDetailInfo get(String groupKey, String bizKey, String topic, Date executionTime) {
+    public TaskDetailInfoBO get(String groupKey, String bizKey, String topic, Date executionTime) {
         TaskDetailInfoExample example = new TaskDetailInfoExample();
         example.createCriteria().andGroupKeyEqualTo(groupKey).andBizKeyEqualTo(bizKey)
-                                .andTopicEqualTo(topic).andExecutionTimeEqualTo(executionTime);
+                .andTopicEqualTo(topic).andExecutionTimeEqualTo(executionTime);
         List<TaskDetailInfo> taskDetailInfoList = taskDetailInfoExtendMapper.selectByExample(example);
-        if(CollectionUtils.isNotEmpty(taskDetailInfoList)){
-           return taskDetailInfoList.get(0);
+        if (CollectionUtils.isNotEmpty(taskDetailInfoList)) {
+            TaskDetailInfoBO taskDetailInfoBO = new TaskDetailInfoBO();
+            BeanUtils.copyProperties(taskDetailInfoList.get(0), taskDetailInfoBO);
+            return taskDetailInfoBO;
         }
         return null;
     }

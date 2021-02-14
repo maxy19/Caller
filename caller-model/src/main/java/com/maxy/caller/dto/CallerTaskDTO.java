@@ -34,6 +34,16 @@ public class CallerTaskDTO {
      */
     private Date executionTime;
 
+    /**
+     * 超时时间 单位毫秒
+     */
+    private Integer timeout;
+
+    /**
+     * 重试次数 默认 0：不执行重试
+     */
+    private Byte retryNum;
+
     public String getUniqueKey() {
         return String.join(":", groupKey, bizKey, topic);
     }

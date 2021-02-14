@@ -22,7 +22,7 @@ import javax.annotation.Resource;
 import java.net.SocketAddress;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 import static com.maxy.caller.core.utils.CallerUtils.parse;
 
@@ -111,9 +111,9 @@ public class NettyClientHandler extends ChannelDuplexHandler {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ProtocolMsg protocolMsg = (ProtocolMsg) msg;
         log.info("客户端读取信息:{}", protocolMsg);
-        BiConsumer<ProtocolMsg, Channel> consumer = nettyClientHelper.getEventMap().get(protocolMsg.getEventEnum());
+        BiFunction<ProtocolMsg, Channel, Object> consumer = nettyClientHelper.getEventMap().get(protocolMsg.getEventEnum());
         if (consumer != null) {
-            consumer.accept(protocolMsg, ctx.channel());
+            consumer.apply(protocolMsg, ctx.channel());
         }
     }
 

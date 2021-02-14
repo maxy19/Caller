@@ -2,8 +2,10 @@ package com.maxy.caller.sample;
 
 import com.maxy.caller.client.executor.DelayHandler;
 import com.maxy.caller.client.executor.annotation.Registered;
+import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.core.service.DelayTaskService;
 import com.maxy.caller.dto.ResultDTO;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -12,6 +14,7 @@ import javax.annotation.Resource;
  * @Author maxy
  **/
 @Service
+@Log4j2
 public class CallerSample implements DelayHandler {
 
     @Resource
@@ -19,6 +22,7 @@ public class CallerSample implements DelayHandler {
 
     /**
      * 到时要执行的方法
+     *
      * @param param
      * @return
      * @throws Exception
@@ -26,7 +30,8 @@ public class CallerSample implements DelayHandler {
     @Override
     @Registered(topic = "clsExpireOrder")
     public ResultDTO execute(String param) throws Exception {
-        System.out.println("开始执行：参数" + param);
+        long time = System.currentTimeMillis();
+        log.info("参数：{},时间：{}", param, DateUtils.parseDate(String.valueOf(time)));
         return ResultDTO.getSuccessResponse();
     }
 

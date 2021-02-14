@@ -121,7 +121,7 @@ public class ScheduleWorker implements AdminWorker {
             }
         }
         //记录log
-        taskLogService.batchInsert(preReadInfoList);
+        taskLogService.initByBatchInsert(preReadInfoList);
     }
 
     private void addCacheQueue(List<TaskDetailInfoBO> preReadInfoList) {

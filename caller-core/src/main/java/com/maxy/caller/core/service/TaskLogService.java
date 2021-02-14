@@ -12,8 +12,10 @@ public interface TaskLogService extends CommonService {
 
     void deleteBySpecifiedTime(Date specifiedTime);
 
-    boolean batchInsert(List<TaskDetailInfoBO> preReadInfoList);
+    boolean initByBatchInsert(List<TaskDetailInfoBO> preReadInfoList);
 
-    boolean save(TaskDetailInfoBO taskDetailInfoBO);
+    boolean save(TaskDetailInfoBO taskDetailInfoBO, String executeAddress, Byte retryNum);
+
+    boolean saveClientResult(TaskDetailInfoBO taskDetailInfoBO, String executeAddres);
 
 }

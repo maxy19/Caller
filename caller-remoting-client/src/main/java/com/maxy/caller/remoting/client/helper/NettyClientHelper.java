@@ -17,7 +17,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import static com.maxy.caller.core.enums.ExceptionEnum.BIZ_ERROR;
@@ -35,7 +35,7 @@ public class NettyClientHelper {
     /**
      * 各种事件处理器
      */
-    private Map<EventEnum, BiConsumer<ProtocolMsg, Channel>> eventMap = new ConcurrentHashMap();
+    private Map<EventEnum, BiFunction<ProtocolMsg, Channel, Object>> eventMap = new ConcurrentHashMap();
 
     /**
      * 服务端客户端共有事件
@@ -43,7 +43,8 @@ public class NettyClientHelper {
         eventMap.put(EventEnum.MESSAGE, (protocolMsg, channel) -> {
             String msg = (String) getRequest(protocolMsg);
             log.info("" +
-                    "消息:{},远程地址:{}", msg, parse(channel));
+                    "客户端收到消息:{},远程地址:{}", msg, parse(channel));
+            return this;
         });
     }
 
@@ -54,6 +55,7 @@ public class NettyClientHelper {
         eventMap.put(EventEnum.EXECUTE, (protocolMsg, channel) -> {
             RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
             CallerTaskDTO callerTaskDTO = request.getCallerTaskDTO();
+            log.info("callerTaskEvent#callerTaskDTO:{}",callerTaskDTO);
             MethodModel methodModel = DispatchCenter.get(callerTaskDTO.getUniqueKey());
             Method method = methodModel.getMethod();
             method.setAccessible(true);
@@ -69,6 +71,7 @@ public class NettyClientHelper {
                 }
                 log.error("执行方法:{}|参数:{}.出现异常！", methodModel.getTarget(), callerTaskDTO.getExecutionParam(), e);
             }
+            return this;
         });
         return this;
     };

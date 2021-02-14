@@ -2,6 +2,7 @@ package com.maxy.caller.admin.service.Impl;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskBaseInfoBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
@@ -18,7 +19,9 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Author maxy
@@ -29,6 +32,8 @@ public class TaskBaseInfoServiceImpl implements TaskBaseInfoService {
     private TaskBaseInfoMapper taskBaseInfoMapper;
     @Resource
     private TaskGroupMapper taskGroupMapper;
+    @Resource
+    private CacheService cacheService;
 
     @Override
     public PageInfo<TaskBaseInfoBO> list(QueryConditionBO queryConditionBO) {
@@ -54,7 +59,19 @@ public class TaskBaseInfoServiceImpl implements TaskBaseInfoService {
         BeanCopyUtils.copy(taskBaseInfoBO, taskDetailInfo);
         taskDetailInfo.setCreateTime(new Date());
         taskDetailInfo.setUpdateTime(new Date());
-        return taskBaseInfoMapper.insertSelective(taskDetailInfo) > 0;
+        if (taskBaseInfoMapper.insertSelective(taskDetailInfo) > 0) {
+            cacheInfo(taskBaseInfoBO);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean cacheInfo(TaskBaseInfoBO taskBaseInfoBO) {
+        Map<String, String> map = new HashMap<>();
+        map.put(ALARM_EMAIL, taskBaseInfoBO.getAlarmEmail());
+        map.put(STRATEGY_VALUE, taskBaseInfoBO.getExecutorRouterStrategy().toString());
+        cacheService.hmset(getUniqueName(taskBaseInfoBO), map, ONE_HOUR);
+        return true;
     }
 
     @Override
@@ -67,11 +84,14 @@ public class TaskBaseInfoServiceImpl implements TaskBaseInfoService {
         criteria.andBizKeyEqualTo(taskBaseInfo.getBizKey());
         criteria.andTopicEqualTo(taskBaseInfo.getTopic());
         taskBaseInfo.setUpdateTime(new Date());
-        return taskBaseInfoMapper.updateByExampleSelective(taskBaseInfo, taskBaseInfoExample) > 0;
+        if (taskBaseInfoMapper.updateByExampleSelective(taskBaseInfo, taskBaseInfoExample) > 0) {
+            cacheInfo(taskBaseInfoBO);
+        }
+        return false;
     }
 
     @Override
-    public Boolean detele(Long taskInfoId) {
+    public Boolean delete(Long taskInfoId) {
         return taskBaseInfoMapper.deleteByPrimaryKey(taskInfoId) > 0;
     }
 
@@ -91,7 +111,7 @@ public class TaskBaseInfoServiceImpl implements TaskBaseInfoService {
         criteria.andBizKeyEqualTo(bizKey);
         criteria.andTopicEqualTo(topic);
         List<TaskBaseInfo> taskBaseInfos = taskBaseInfoMapper.selectByExample(example);
-        if(CollectionUtils.isEmpty(taskBaseInfos)){
+        if (CollectionUtils.isEmpty(taskBaseInfos)) {
             return null;
         }
         TaskBaseInfoBO taskBaseInfoBO = new TaskBaseInfoBO();

@@ -19,7 +19,7 @@ public interface TaskBaseInfoService extends CommonService {
 
     Boolean update(TaskBaseInfoBO taskInfoBO);
 
-    Boolean detele(Long taskInfoId);
+    Boolean delete(Long taskInfoId);
 
     TaskBaseInfoBO getById(Long taskBaseInfoId);
 

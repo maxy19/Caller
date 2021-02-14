@@ -10,6 +10,7 @@ import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.bo.TaskRegistryBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
 import com.maxy.caller.core.enums.EventEnum;
+import com.maxy.caller.core.exception.BusinessException;
 import com.maxy.caller.core.netty.pojo.Pinger;
 import com.maxy.caller.core.netty.protocol.ProtocolMsg;
 import com.maxy.caller.core.service.TaskDetailInfoService;
@@ -34,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import static com.maxy.caller.core.enums.ExceptionEnum.FOUND_NOT_EXECUTE_INFO;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_SUCCEED;
 import static com.maxy.caller.core.utils.CallerUtils.parse;
@@ -78,7 +80,7 @@ public class NettyServerHelper {
      */ {
         eventMap.put(EventEnum.MESSAGE, (protocolMsg, channel) -> {
             String msg = (String) getRequest(protocolMsg);
-            log.info("消息:{}", msg);
+            log.info("服务端收到消息:{}", msg);
         });
     }
 
@@ -89,7 +91,7 @@ public class NettyServerHelper {
         eventMap.put(EventEnum.REGISTRY, (protocolMsg, channel) -> {
             RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
             RegConfigInfo regConfigInfo = request.getRegConfigInfo();
-            log.debug("registryEvent#接受客户端启动注册信息:{}", regConfigInfo);
+            log.info("registryEvent#接受客户端启动注册信息:{}", regConfigInfo);
             activeChannel.put(regConfigInfo.getUniqName(), channel);
             ipChannelMapping.put(parse(channel), channel);
             //保存register
@@ -129,6 +131,7 @@ public class NettyServerHelper {
      */
     public Supplier<NettyServerHelper> resultEvent = () -> {
         eventMap.put(EventEnum.RESULT, (protocolMsg, channel) -> {
+            log.info("resultEvent#执行客户端方法返回值:{}", protocolMsg);
             RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
             if (Objects.isNull(request.getResultDTO())) {
                 log.error("resultEvent#ResultDTO为空!参数:{}", protocolMsg);
@@ -136,12 +139,15 @@ public class NettyServerHelper {
             }
             CallerTaskDTO dto = request.getCallerTaskDTO();
             TaskDetailInfo taskDetailInfo = taskDetailInfoService.get(dto.getGroupKey(), dto.getBizKey(), dto.getTopic(), dto.getExecutionTime());
+            if (Objects.isNull(taskDetailInfo)) {
+                throw new BusinessException(FOUND_NOT_EXECUTE_INFO);
+            }
             TaskDetailInfoBO taskDetailInfoBO = new TaskDetailInfoBO();
             BeanUtils.copyProperties(taskDetailInfo, taskDetailInfoBO);
-            //保存执行结果
-            Boolean invokeResult = request.getResultDTO().isSuccess();
-            taskDetailInfoBO.setExecutionStatus(invokeResult ? EXECUTION_SUCCEED.getCode() : EXECUTION_FAILED.getCode());
-            taskLogService.save(taskDetailInfoBO);
+            taskDetailInfoBO.setExecutionStatus(request.getResultDTO().isSuccess()
+                    ? EXECUTION_SUCCEED.getCode() : EXECUTION_FAILED.getCode());
+            taskDetailInfoService.update(taskDetailInfoBO);
+            taskLogService.saveClientResult(taskDetailInfoBO,parse(channel));
         });
         return this;
     };
@@ -152,7 +158,7 @@ public class NettyServerHelper {
     public Supplier<NettyServerHelper> delayTaskEvent = () -> {
         eventMap.put(EventEnum.DELAYTASK, (protocolMsg, channel) -> {
             RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
-            log.debug("delayTaskEvent#接受客户端添加延迟任务:{}", request.getDelayTasks());
+            log.info("delayTaskEvent#接受客户端添加延迟任务:{}", request.getDelayTasks());
             taskDetailInfoService.batchInsert(BeanCopyUtils.copyListProperties(request.getDelayTasks(), TaskDetailInfoBO::new));
         });
         return this;

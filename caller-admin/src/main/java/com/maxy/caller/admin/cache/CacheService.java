@@ -7,6 +7,7 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Tuple;
 
 import javax.annotation.Resource;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -57,7 +58,7 @@ public class CacheService {
                 "end\n" +
                 "return result";
         log.debug("script:{}", script);
-        return (List) jedisCluster.eval(script, keys, args);
+        return (List<Object>) jedisCluster.eval(script, keys, args);
     }
 
     public Set<Tuple> zrangeByScoreWithScores(String key, double min, double max) {
@@ -70,6 +71,22 @@ public class CacheService {
 
     public String set(String key, int expire, String value) {
         return jedisCluster.setex(key, expire, value);
+    }
+
+    public void hmset(String key, Map<String, String> hash, int expire) {
+        jedisCluster.hmset(key, hash);
+        expire(key, expire);
+    }
+
+    public void hmset(String key, String field, String value, int expire) {
+        Map<String, String> map = new HashMap<>();
+        map.put(field, value);
+        jedisCluster.hmset(key, map);
+        expire(key, expire);
+    }
+
+    public String hget(String key, String field) {
+        return jedisCluster.hget(key, field);
     }
 
     public String get(String key) {

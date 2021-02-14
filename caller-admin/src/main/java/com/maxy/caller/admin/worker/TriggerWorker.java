@@ -16,13 +16,12 @@ import com.maxy.caller.core.config.ThreadPoolRegisterCenter;
 import com.maxy.caller.core.netty.protocol.ProtocolMsg;
 import com.maxy.caller.core.service.TaskBaseInfoService;
 import com.maxy.caller.core.service.TaskDetailInfoService;
+import com.maxy.caller.core.service.TaskLogService;
 import com.maxy.caller.core.timer.CacheTimer;
 import com.maxy.caller.dto.CallerTaskDTO;
-import com.maxy.caller.dto.ResultDTO;
-import com.maxy.caller.dto.RpcRequestDTO;
+import com.maxy.caller.pojo.Value;
 import com.maxy.caller.remoting.server.netty.helper.NettyServerHelper;
 import io.netty.channel.Channel;
-import io.netty.util.concurrent.Future;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -33,14 +32,14 @@ import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
-import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_SUCCEED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXPIRED;
+import static com.maxy.caller.core.enums.ExecutionStatusEnum.RETRYING;
 import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX_FORMAT;
 import static com.maxy.caller.core.utils.CallerUtils.parse;
 
@@ -59,6 +58,8 @@ public class TriggerWorker implements AdminWorker {
     private TaskDetailInfoService taskDetailInfoService;
     @Resource
     private TaskBaseInfoService taskBaseInfoService;
+    @Resource
+    private TaskLogService taskLogService;
 
     private volatile boolean toggle = true;
     @Resource
@@ -69,6 +70,7 @@ public class TriggerWorker implements AdminWorker {
     private ExecutorService worker = threadPoolConfig.getSingleThreadExecutor(true);
     private ScheduledExecutorService scheduledExecutor = threadPoolConfig.getPublicScheduledExecutor(true);
     private ExecutorService executorService = threadPoolConfig.getPublicScheduledExecutor(true);
+    private ExecutorService retryService = threadPoolConfig.getPublicScheduledExecutor(true);
     private ListeningExecutorService listeningWorker = MoreExecutors.listeningDecorator(executorService);
     private CacheTimer cacheTimer = CacheTimer.getInstance();
 
@@ -89,16 +91,13 @@ public class TriggerWorker implements AdminWorker {
 
     private void pop() {
         try {
-            String json = "{\"id\":2,\"groupKey\":\"taobao\",\"bizKey\":\"order\",\"topic\":\"clsExpireOrder\",\"executionParam\":\"你好测试成功!!\",\"executionTime\":\"2021-02-09 18:16:45\",\"executionStatus\":1,\"timeout\":3000,\"retryNum\":1}\n";
-            TaskDetailInfoBO taskDetailInfoBO = JSONUtils.parseObject(json, TaskDetailInfoBO.class);
-            remoteClientMethod(taskDetailInfoBO);
-          /*  int size = cacheService.getNodeMap().size();
+            int size = cacheService.getNodeMap().size();
             //获取索引列表
             Date currentDate = new Date();
             for (int index = 0, length = size / 2; index < length; index++) {
                 //循环执行
                 invokeAll(getQueueData(currentDate, index));
-            }*/
+            }
         } catch (Exception e) {
             log.error("pop#执行出队时发现异常!!", e);
         }
@@ -128,7 +127,7 @@ public class TriggerWorker implements AdminWorker {
      */
     private boolean checkExpireTaskInfo(TaskDetailInfoBO taskDetailInfoBO) {
         if (taskDetailInfoBO.getExecutionTime().getTime() <= System.currentTimeMillis()) {
-            log.info("checkExpireTaskInfo#[{}]任务,时间:[{}]已过期将丢弃.", getUniqueName(taskDetailInfoBO), taskDetailInfoBO.getExecutionTime());
+            log.info("checkExpireTaskInfo#[{}]任务,时间:[{}]已过期将丢弃.", (taskDetailInfoBO), taskDetailInfoBO.getExecutionTime());
             taskDetailInfoBO.setExecutionStatus(EXPIRED.getCode());
             taskDetailInfoService.update(taskDetailInfoBO);
             return true;
@@ -149,9 +148,9 @@ public class TriggerWorker implements AdminWorker {
                 if (checkExpireTaskInfo(taskDetailInfoBO)) {
                     continue;
                 }
-               // cacheTimer.newTimeout(timeout -> {
+                cacheTimer.newTimeout(timeout -> {
                     remoteClientMethod(taskDetailInfoBO);
-                //}, taskDetailInfoBO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+                }, taskDetailInfoBO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -163,13 +162,13 @@ public class TriggerWorker implements AdminWorker {
      * @return
      */
     private Byte getExecutorRouterStrategy(TaskDetailInfoBO taskDetailInfoBO) {
-        String strategyName = cacheService.get(getUniqueName(taskDetailInfoBO));
-        if (StringUtils.isBlank(strategyName)) {
+        String strategyValue = cacheService.hget(getUniqueName(taskDetailInfoBO), STRATEGY_VALUE);
+        if (StringUtils.isBlank(strategyValue)) {
             TaskBaseInfoBO taskBaseInfoBO = taskBaseInfoService.getByUniqueKey(taskDetailInfoBO.getGroupKey(), taskDetailInfoBO.getBizKey(), taskDetailInfoBO.getTopic());
-            cacheService.set(getUniqueName(taskBaseInfoBO), 3600, taskBaseInfoBO.getExecutorRouterStrategy().toString());
+            cacheService.hmset(getUniqueName(taskBaseInfoBO), STRATEGY_VALUE, String.valueOf(taskBaseInfoBO.getExecutorRouterStrategy()), ONE_HOUR);
             return taskBaseInfoBO.getExecutorRouterStrategy();
         }
-        return Byte.valueOf(strategyName);
+        return Byte.valueOf(strategyValue);
     }
 
 
@@ -185,46 +184,79 @@ public class TriggerWorker implements AdminWorker {
             if (CollectionUtils.isEmpty(channels)) {
                 return;
             }
-            String remoteAddr = RouterStrategyEnum.get(getExecutorRouterStrategy(taskDetailInfoBO), parse(channels));
             //调用远程触发客户端
             if (CollectionUtils.isNotEmpty(channels)) {
                 CallerTaskDTO callerTaskDTO = new CallerTaskDTO();
                 BeanUtils.copyProperties(taskDetailInfoBO, callerTaskDTO);
-                Channel channel = nettyServerHelper.getChannelByAddr(remoteAddr);
-                channel.writeAndFlush(ProtocolMsg.toEntity(callerTaskDTO)).addListener(future -> {
-                    processResult(taskDetailInfoBO, future);
-                });
+                //获取channel
+                Channel channel = nettyServerHelper.getChannelByAddr(RouterStrategyEnum.get(getExecutorRouterStrategy(taskDetailInfoBO), parse(channels)));
+                //执行并监听结果
+                boolean result = executionSchedule(callerTaskDTO, channel);
+                //判断是否重试
+                if (result && callerTaskDTO.getRetryNum() > 0) {
+                    retryExecute(callerTaskDTO, channel);
+                }
             }
         });
     }
 
     /**
-     * 处理返回结果
+     * 重试
      *
-     * @param taskDetailInfoBO
-     * @param future
+     * @param callerTaskDTO
+     * @param channel
      */
-    private void processResult(TaskDetailInfoBO taskDetailInfoBO, Future<? super Void> future) {
-        ProtocolMsg protocolMsg = null;
-        try {
-            log.info("processResult#执行参数:{}", taskDetailInfoBO);
-            protocolMsg = (ProtocolMsg) future.get(taskDetailInfoBO.getTimeout(), TimeUnit.MILLISECONDS);
-            log.info("processResult#执行客户端方法返回值:{}", protocolMsg);
-        } catch (Exception e) {
-            log.error("调用方法超时或者遇到异常！参数：{}", taskDetailInfoBO, e);
-        }
-        if (Objects.isNull(protocolMsg)) {
-            return;
-        }
-        RpcRequestDTO request = (RpcRequestDTO) protocolMsg.getBody();
-        ResultDTO resultDTO = request.getResultDTO();
-        taskDetailInfoBO.setExecutionStatus(resultDTO.isSuccess() ? EXECUTION_SUCCEED.getCode() : EXECUTION_FAILED.getCode());
-        taskDetailInfoService.update(taskDetailInfoBO);
+    private void retryExecute(CallerTaskDTO callerTaskDTO, Channel channel) {
+        TaskDetailInfoBO taskDetailInfoBO = getDetailInfo(callerTaskDTO);
+        retryService.execute(() -> {
+            for (byte retryNum = 0, totalNum = callerTaskDTO.getRetryNum(); retryNum < totalNum; retryNum++) {
+                boolean result = executionSchedule(callerTaskDTO, channel);
+                if (result) {
+                    taskDetailInfoBO.setExecutionStatus(RETRYING.getCode());
+                    taskDetailInfoBO.setRetryNum(retryNum);
+                    Boolean updateResult = taskDetailInfoService.update(taskDetailInfoBO);
+                    log.info("retryExecute#更新重试中状态结果：{}", updateResult);
+                    taskLogService.save(taskDetailInfoBO, parse(channel), retryNum);
+                    return;
+                }
+            }
+        });
     }
+
+    private TaskDetailInfoBO getDetailInfo(CallerTaskDTO callerTaskDTO) {
+        TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(),
+                callerTaskDTO.getBizKey(),
+                callerTaskDTO.getTopic(),
+                callerTaskDTO.getExecutionTime());
+        return taskDetailInfoBO;
+    }
+
+
+    /**
+     * 执行调度
+     *
+     * @return
+     */
+    private boolean executionSchedule(CallerTaskDTO callerTaskDTO,
+                                      Channel channel) {
+        Value<Boolean> value = new Value<>(false);
+        channel.writeAndFlush(ProtocolMsg.toEntity(callerTaskDTO)).addListener(future -> {
+            try {
+                log.info("processResult#执行参数:{}", callerTaskDTO);
+                future.get(callerTaskDTO.getTimeout(), TimeUnit.MILLISECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                value.setValue(true);
+                log.error("调用方法超时或者遇到异常！参数：{}", callerTaskDTO, e);
+            }
+        });
+        return value.getValue();
+    }
+
 
     @Override
     public void stop() {
         toggle = false;
         ThreadPoolRegisterCenter.destroy(worker, scheduledExecutor, listeningWorker, executorService);
     }
+
 }

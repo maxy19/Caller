@@ -72,7 +72,7 @@ public class TaskBaseInfoController {
         return FacadeTemplate.execute(ExecuteLog.newEntity("delete", taskInfoId), () -> {
         }, () -> {
             Map<String, Boolean> map = Maps.newHashMap();
-            map.put("result", taskBaseInfoService.detele(taskInfoId));
+            map.put("result", taskBaseInfoService.delete(taskInfoId));
             return Response.getSuccessResponse(map);
         });
     }
