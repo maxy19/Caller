@@ -19,7 +19,7 @@ import java.io.File;
  */
 @Service
 @Log4j2
-public class IMailServiceImpl implements MailService {
+public class MailServiceImpl implements MailService {
 
     /**
      * Spring Boot 提供了一个发送邮件的简单抽象，使用的是下面这个接口，这里直接注入即可使用

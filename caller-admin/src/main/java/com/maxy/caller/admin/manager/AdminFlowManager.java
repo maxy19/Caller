@@ -55,12 +55,9 @@ public class AdminFlowManager implements SmartInitializingSingleton, AdminWorker
     @Override
     public void start() {
         //启动
-        /*workerList.forEach(worker -> {
+        workerList.forEach(worker -> {
             worker.start();
-        });*/
-        //workerList.get(1).start();
-        //workerList.get(1).start();
-        workerList.get(0).start();
+        });
 
     }
 

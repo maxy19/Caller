@@ -6,12 +6,12 @@ import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
 import com.maxy.caller.common.utils.DateUtils;
+import com.maxy.caller.core.service.TaskBaseInfoService;
 import com.maxy.caller.core.service.TaskDetailInfoService;
 import com.maxy.caller.model.TaskDetailInfo;
 import com.maxy.caller.model.TaskGroup;
 import com.maxy.caller.persistent.example.TaskDetailInfoExample;
 import com.maxy.caller.persistent.example.TaskGroupExample;
-import com.maxy.caller.persistent.mapper.TaskBaseInfoMapper;
 import com.maxy.caller.persistent.mapper.TaskDetailInfoExtendMapper;
 import com.maxy.caller.persistent.mapper.TaskGroupMapper;
 import com.maxy.caller.pojo.Pagination;
@@ -32,9 +32,9 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     @Resource
     private TaskDetailInfoExtendMapper taskDetailInfoExtendMapper;
     @Resource
-    private TaskBaseInfoMapper taskBaseInfoMapper;
-    @Resource
     private TaskGroupMapper taskGroupMapper;
+    @Resource
+    private TaskBaseInfoService taskBaseInfoService;
 
     @Override
     public PageInfo<TaskDetailInfoBO> list(QueryConditionBO queryConditionBO) {
@@ -145,5 +145,14 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
             return taskDetailInfoBO;
         }
         return null;
+    }
+    /**
+     * 缓存路由策略
+     *
+     * @return
+     */
+    @Override
+    public Byte getRouterStrategy(TaskDetailInfoBO taskDetailInfoBO) {
+        return taskBaseInfoService.getRouterStrategy(taskDetailInfoBO.getGroupKey(), taskDetailInfoBO.getBizKey(), taskDetailInfoBO.getTopic());
     }
 }

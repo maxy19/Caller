@@ -15,6 +15,7 @@ import com.maxy.caller.persistent.mapper.TaskBaseInfoMapper;
 import com.maxy.caller.persistent.mapper.TaskGroupMapper;
 import com.maxy.caller.pojo.Pagination;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -124,5 +125,32 @@ public class TaskBaseInfoServiceImpl implements TaskBaseInfoService {
         TaskBaseInfoExample example = new TaskBaseInfoExample();
         List<TaskBaseInfo> taskBaseInfos = taskBaseInfoMapper.selectByExample(example);
         return BeanCopyUtils.copyListProperties(taskBaseInfos, TaskBaseInfoBO::new);
+    }
+
+    /**
+     * 缓存路由策略
+     *
+     * @return
+     */
+    @Override
+    public Byte getRouterStrategy(String groupKey, String bizKey, String topic) {
+        String strategyValue = cacheService.hget(getUniqueName(groupKey, bizKey, topic), STRATEGY_VALUE);
+        if (StringUtils.isBlank(strategyValue)) {
+            TaskBaseInfoBO taskBaseInfoBO = getByUniqueKey(groupKey, bizKey, topic);
+            cacheService.hmset(getUniqueName(taskBaseInfoBO), STRATEGY_VALUE, String.valueOf(taskBaseInfoBO.getExecutorRouterStrategy()), ONE_HOUR);
+            return taskBaseInfoBO.getExecutorRouterStrategy();
+        }
+        return Byte.valueOf(strategyValue);
+    }
+
+    @Override
+    public String getAlarmEmail(String groupKey, String bizKey, String topic) {
+        String alarmEmail = cacheService.hget(getUniqueName(groupKey, bizKey, topic), ALARM_EMAIL);
+        if (StringUtils.isBlank(alarmEmail)) {
+            TaskBaseInfoBO taskBaseInfoBO = getByUniqueKey(groupKey, bizKey, topic);
+            cacheService.hmset(getUniqueName(taskBaseInfoBO), ALARM_EMAIL, String.valueOf(taskBaseInfoBO.getExecutorRouterStrategy()), ONE_HOUR);
+            return taskBaseInfoBO.getAlarmEmail();
+        }
+        return alarmEmail;
     }
 }

@@ -7,7 +7,6 @@ import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.admin.config.AdminConfigCenter;
 import com.maxy.caller.admin.enums.RouterStrategyEnum;
 import com.maxy.caller.admin.service.AdminWorker;
-import com.maxy.caller.bo.TaskBaseInfoBO;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.common.utils.JSONUtils;
@@ -24,7 +23,7 @@ import com.maxy.caller.remoting.server.netty.helper.NettyServerHelper;
 import io.netty.channel.Channel;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
@@ -81,7 +80,7 @@ public class TriggerWorker implements AdminWorker {
                 try {
                     pop();
                     //打散时间
-                    TimeUnit.SECONDS.sleep(10);
+                    TimeUnit.MILLISECONDS.sleep(10 * RandomUtils.nextInt(1,100));
                 } catch (Exception e) {
                     log.error("队列获取数据出现异常", e);
                 }
@@ -113,7 +112,7 @@ public class TriggerWorker implements AdminWorker {
     private List<Object> getQueueData(Date currentDate, int index) {
         List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_FORMAT.join(index));
         List<String> args = Arrays.asList("10",//length
-                String.valueOf(DateUtils.addSecond(currentDate, -1).getTime()),
+                                          "-inf",
                 String.valueOf(DateUtils.addDays(currentDate, 5).getTime()),
                 "LIMIT", "0", adminConfigCenter.getLimitNum());
         return cacheService.getQueueData(keys, args);
@@ -130,6 +129,7 @@ public class TriggerWorker implements AdminWorker {
             log.info("checkExpireTaskInfo#[{}]任务,时间:[{}]已过期将丢弃.", (taskDetailInfoBO), taskDetailInfoBO.getExecutionTime());
             taskDetailInfoBO.setExecutionStatus(EXPIRED.getCode());
             taskDetailInfoService.update(taskDetailInfoBO);
+            taskLogService.save(taskDetailInfoBO);
             return true;
         }
         return false;
@@ -155,21 +155,6 @@ public class TriggerWorker implements AdminWorker {
         }
     }
 
-    /**
-     * 缓存路由策略
-     *
-     * @param taskDetailInfoBO
-     * @return
-     */
-    private Byte getExecutorRouterStrategy(TaskDetailInfoBO taskDetailInfoBO) {
-        String strategyValue = cacheService.hget(getUniqueName(taskDetailInfoBO), STRATEGY_VALUE);
-        if (StringUtils.isBlank(strategyValue)) {
-            TaskBaseInfoBO taskBaseInfoBO = taskBaseInfoService.getByUniqueKey(taskDetailInfoBO.getGroupKey(), taskDetailInfoBO.getBizKey(), taskDetailInfoBO.getTopic());
-            cacheService.hmset(getUniqueName(taskBaseInfoBO), STRATEGY_VALUE, String.valueOf(taskBaseInfoBO.getExecutorRouterStrategy()), ONE_HOUR);
-            return taskBaseInfoBO.getExecutorRouterStrategy();
-        }
-        return Byte.valueOf(strategyValue);
-    }
 
 
     /**
@@ -189,7 +174,7 @@ public class TriggerWorker implements AdminWorker {
                 CallerTaskDTO callerTaskDTO = new CallerTaskDTO();
                 BeanUtils.copyProperties(taskDetailInfoBO, callerTaskDTO);
                 //获取channel
-                Channel channel = nettyServerHelper.getChannelByAddr(RouterStrategyEnum.get(getExecutorRouterStrategy(taskDetailInfoBO), parse(channels)));
+                Channel channel = nettyServerHelper.getChannelByAddr(RouterStrategyEnum.get(taskDetailInfoService .getRouterStrategy(taskDetailInfoBO), parse(channels)));
                 //执行并监听结果
                 boolean result = executionSchedule(callerTaskDTO, channel);
                 //判断是否重试

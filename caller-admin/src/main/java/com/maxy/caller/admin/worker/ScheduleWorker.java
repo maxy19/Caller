@@ -13,6 +13,7 @@ import com.maxy.caller.core.service.TaskLockService;
 import com.maxy.caller.core.service.TaskLogService;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
@@ -74,7 +75,7 @@ public class ScheduleWorker implements AdminWorker {
                     //入队
                     push();
                     //(打散时间防止极端情况都抢锁)
-                    TimeUnit.DAYS.sleep(1);
+                    TimeUnit.MILLISECONDS.sleep(10 * RandomUtils.nextInt(1, 100));
                 } catch (Exception e) {
                     log.error("加入队列定时出现异常！！", e);
                 }

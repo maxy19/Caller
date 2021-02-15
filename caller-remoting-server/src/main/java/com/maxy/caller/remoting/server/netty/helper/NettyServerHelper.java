@@ -18,8 +18,8 @@ import com.maxy.caller.core.service.TaskGroupService;
 import com.maxy.caller.core.service.TaskLogService;
 import com.maxy.caller.core.service.TaskRegistryService;
 import com.maxy.caller.dto.CallerTaskDTO;
+import com.maxy.caller.dto.ResultDTO;
 import com.maxy.caller.dto.RpcRequestDTO;
-import com.maxy.caller.model.TaskDetailInfo;
 import com.maxy.caller.pojo.RegConfigInfo;
 import io.netty.channel.Channel;
 import lombok.Data;
@@ -138,16 +138,15 @@ public class NettyServerHelper {
                 return;
             }
             CallerTaskDTO dto = request.getCallerTaskDTO();
-            TaskDetailInfo taskDetailInfo = taskDetailInfoService.get(dto.getGroupKey(), dto.getBizKey(), dto.getTopic(), dto.getExecutionTime());
-            if (Objects.isNull(taskDetailInfo)) {
+            TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(dto.getGroupKey(), dto.getBizKey(), dto.getTopic(), dto.getExecutionTime());
+            if (Objects.isNull(taskDetailInfoBO)) {
                 throw new BusinessException(FOUND_NOT_EXECUTE_INFO);
             }
-            TaskDetailInfoBO taskDetailInfoBO = new TaskDetailInfoBO();
-            BeanUtils.copyProperties(taskDetailInfo, taskDetailInfoBO);
-            taskDetailInfoBO.setExecutionStatus(request.getResultDTO().isSuccess()
+            ResultDTO resultDTO = request.getResultDTO();
+            taskDetailInfoBO.setExecutionStatus(resultDTO.isSuccess()
                     ? EXECUTION_SUCCEED.getCode() : EXECUTION_FAILED.getCode());
             taskDetailInfoService.update(taskDetailInfoBO);
-            taskLogService.saveClientResult(taskDetailInfoBO,parse(channel));
+            taskLogService.saveClientResult(taskDetailInfoBO,resultDTO.getMessage(), parse(channel));
         });
         return this;
     };

@@ -44,13 +44,6 @@ public class ResultDTO<T> {
         return resultDTO;
     }
 
-    public static <T> ResultDTO<T> getErrorResult(Integer statusCode) {
-        ResultDTO<T> resultDTO = getSuccessResponse();
-        resultDTO.setCode(statusCode);
-        resultDTO.setSuccess(false);
-        return resultDTO;
-    }
-
     public static <T> ResultDTO<T> getErrorResult(Integer statusCode, String message) {
         ResultDTO<T> resultDTO = getSuccessResponse();
         resultDTO.setCode(statusCode);

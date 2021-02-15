@@ -27,4 +27,7 @@ public interface TaskBaseInfoService extends CommonService {
 
     List<TaskBaseInfoBO> getTaskInfoBOList(Date currentTime, Byte executionStatus, int addSecond);
 
+    Byte getRouterStrategy(String groupKey, String bizKey, String topic);
+
+    String getAlarmEmail(String groupKey, String bizKey, String topic);
 }
