@@ -11,9 +11,11 @@ import com.maxy.caller.core.service.TaskBaseInfoService;
 import com.maxy.caller.core.service.TaskDetailInfoService;
 import com.maxy.caller.core.service.TaskLockService;
 import com.maxy.caller.core.service.TaskLogService;
+import com.maxy.caller.dto.CallerTaskDTO;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
@@ -148,10 +150,12 @@ public class ScheduleWorker implements AdminWorker {
     private void addZSetQueue(List<TaskDetailInfoBO> preReadInfoList, int size) {
         preReadInfoList.forEach(taskDetailInfoBO -> {
             String uniqueId = getUniqueName(taskDetailInfoBO);
+            CallerTaskDTO dto = new CallerTaskDTO();
+            BeanUtils.copyProperties(taskDetailInfoBO, dto);
             long time = taskDetailInfoBO.getExecutionTime().getTime();
             //消除bigKey则将队列通过{node-1}分片 打散映射
             long slot = getSlot(time, size / 2);
-            cacheService.zadd(ZSET_QUEUE_FORMAT.join(uniqueId, slot), (double) time, JSONUtils.toJSONString(taskDetailInfoBO));
+            cacheService.zadd(ZSET_QUEUE_FORMAT.join(uniqueId, slot), (double) time, JSONUtils.toJSONString(dto));
         });
     }
 

@@ -24,7 +24,6 @@ import io.netty.channel.Channel;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -37,6 +36,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXPIRED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.RETRYING;
 import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX_FORMAT;
@@ -59,8 +59,6 @@ public class TriggerWorker implements AdminWorker {
     private TaskBaseInfoService taskBaseInfoService;
     @Resource
     private TaskLogService taskLogService;
-
-    private volatile boolean toggle = true;
     @Resource
     private AdminConfigCenter adminConfigCenter;
     @Resource
@@ -72,6 +70,7 @@ public class TriggerWorker implements AdminWorker {
     private ExecutorService retryService = threadPoolConfig.getPublicScheduledExecutor(true);
     private ListeningExecutorService listeningWorker = MoreExecutors.listeningDecorator(executorService);
     private CacheTimer cacheTimer = CacheTimer.getInstance();
+    private volatile boolean toggle = true;
 
     @Override
     public void start() {
@@ -80,7 +79,7 @@ public class TriggerWorker implements AdminWorker {
                 try {
                     pop();
                     //打散时间
-                    TimeUnit.MILLISECONDS.sleep(10 * RandomUtils.nextInt(1,100));
+                    TimeUnit.MILLISECONDS.sleep(10 * RandomUtils.nextInt(1, 100));
                 } catch (Exception e) {
                     log.error("队列获取数据出现异常", e);
                 }
@@ -112,7 +111,7 @@ public class TriggerWorker implements AdminWorker {
     private List<Object> getQueueData(Date currentDate, int index) {
         List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_FORMAT.join(index));
         List<String> args = Arrays.asList("10",//length
-                                          "-inf",
+                "-inf",
                 String.valueOf(DateUtils.addDays(currentDate, 5).getTime()),
                 "LIMIT", "0", adminConfigCenter.getLimitNum());
         return cacheService.getQueueData(keys, args);
@@ -121,12 +120,13 @@ public class TriggerWorker implements AdminWorker {
     /**
      * 检查过期任务
      *
-     * @param taskDetailInfoBO
+     * @param callerTaskDTO
      * @return
      */
-    private boolean checkExpireTaskInfo(TaskDetailInfoBO taskDetailInfoBO) {
-        if (taskDetailInfoBO.getExecutionTime().getTime() <= System.currentTimeMillis()) {
-            log.info("checkExpireTaskInfo#[{}]任务,时间:[{}]已过期将丢弃.", (taskDetailInfoBO), taskDetailInfoBO.getExecutionTime());
+    private boolean checkExpireTaskInfo(CallerTaskDTO callerTaskDTO) {
+        if (callerTaskDTO.getExecutionTime().getTime() <= System.currentTimeMillis()) {
+            log.info("checkExpireTaskInfo#[{}]任务,时间:[{}]已过期将丢弃.", callerTaskDTO.getUniqueKey(), callerTaskDTO.getExecutionTime());
+            TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(), callerTaskDTO.getBizKey(), callerTaskDTO.getTopic(), callerTaskDTO.getExecutionTime());
             taskDetailInfoBO.setExecutionStatus(EXPIRED.getCode());
             taskDetailInfoService.update(taskDetailInfoBO);
             taskLogService.save(taskDetailInfoBO);
@@ -144,42 +144,51 @@ public class TriggerWorker implements AdminWorker {
         for (int i = 0, length = queueData.size(); i < length; i++) {
             List<String> zSetList = (List<String>) queueData.get(i);
             for (String element : zSetList) {
-                TaskDetailInfoBO taskDetailInfoBO = JSONUtils.parseObject(element, TaskDetailInfoBO.class);
-                if (checkExpireTaskInfo(taskDetailInfoBO)) {
+                CallerTaskDTO callerTaskDTO = JSONUtils.parseObject(element, CallerTaskDTO.class);
+                if (checkExpireTaskInfo(callerTaskDTO)) {
                     continue;
                 }
                 cacheTimer.newTimeout(timeout -> {
-                    remoteClientMethod(taskDetailInfoBO);
-                }, taskDetailInfoBO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+                    remoteClientMethod(callerTaskDTO);
+                }, callerTaskDTO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
             }
         }
     }
 
 
-
     /**
      * 通过netty调用远程方法
      *
-     * @param taskDetailInfoBO
+     * @param callerTaskDTO
      */
-    private void remoteClientMethod(TaskDetailInfoBO taskDetailInfoBO) {
+    private void remoteClientMethod(CallerTaskDTO callerTaskDTO) {
         //netty call client
         listeningWorker.execute(() -> {
-            List<Channel> channels = nettyServerHelper.getActiveChannel().get(getGroupName(taskDetailInfoBO));
+            List<Channel> channels = nettyServerHelper.getActiveChannel().get(getGroupName(callerTaskDTO));
             if (CollectionUtils.isEmpty(channels)) {
+                log.warn("没有找打可以连接的通道!!!!.");
                 return;
             }
             //调用远程触发客户端
             if (CollectionUtils.isNotEmpty(channels)) {
-                CallerTaskDTO callerTaskDTO = new CallerTaskDTO();
-                BeanUtils.copyProperties(taskDetailInfoBO, callerTaskDTO);
                 //获取channel
-                Channel channel = nettyServerHelper.getChannelByAddr(RouterStrategyEnum.get(taskDetailInfoService .getRouterStrategy(taskDetailInfoBO), parse(channels)));
+                Channel channel = nettyServerHelper.getChannelByAddr(RouterStrategyEnum
+                                                   .get(taskBaseInfoService.getRouterStrategy(callerTaskDTO.getGroupKey(),
+                                                        callerTaskDTO.getBizKey(),
+                                                        callerTaskDTO.getTopic()),
+                                                        parse(channels)));
                 //执行并监听结果
                 boolean result = executionSchedule(callerTaskDTO, channel);
                 //判断是否重试
                 if (result && callerTaskDTO.getRetryNum() > 0) {
                     retryExecute(callerTaskDTO, channel);
+                } else {
+                    TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(),callerTaskDTO.getBizKey(),
+                                                                                  callerTaskDTO.getTopic(), callerTaskDTO.getExecutionTime());
+                    taskDetailInfoBO.setExecutionStatus(EXECUTION_FAILED.getCode());
+                    taskDetailInfoService.update(taskDetailInfoBO);
+                    taskDetailInfoService.removeBackup(callerTaskDTO);
+                    taskLogService.save(taskDetailInfoBO, parse(channel), null);
                 }
             }
         });
@@ -200,6 +209,7 @@ public class TriggerWorker implements AdminWorker {
                     taskDetailInfoBO.setExecutionStatus(RETRYING.getCode());
                     taskDetailInfoBO.setRetryNum(retryNum);
                     Boolean updateResult = taskDetailInfoService.update(taskDetailInfoBO);
+                    taskDetailInfoService.removeBackup(callerTaskDTO);
                     log.info("retryExecute#更新重试中状态结果：{}", updateResult);
                     taskLogService.save(taskDetailInfoBO, parse(channel), retryNum);
                     return;

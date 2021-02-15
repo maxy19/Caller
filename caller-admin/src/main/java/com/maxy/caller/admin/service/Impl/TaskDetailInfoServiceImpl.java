@@ -2,12 +2,14 @@ package com.maxy.caller.admin.service.Impl;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.google.common.collect.ImmutableList;
+import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
 import com.maxy.caller.common.utils.DateUtils;
-import com.maxy.caller.core.service.TaskBaseInfoService;
 import com.maxy.caller.core.service.TaskDetailInfoService;
+import com.maxy.caller.dto.CallerTaskDTO;
 import com.maxy.caller.model.TaskDetailInfo;
 import com.maxy.caller.model.TaskGroup;
 import com.maxy.caller.persistent.example.TaskDetailInfoExample;
@@ -34,7 +36,7 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     @Resource
     private TaskGroupMapper taskGroupMapper;
     @Resource
-    private TaskBaseInfoService taskBaseInfoService;
+    private CacheService cacheService;
 
     @Override
     public PageInfo<TaskDetailInfoBO> list(QueryConditionBO queryConditionBO) {
@@ -146,13 +148,9 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
         }
         return null;
     }
-    /**
-     * 缓存路由策略
-     *
-     * @return
-     */
     @Override
-    public Byte getRouterStrategy(TaskDetailInfoBO taskDetailInfoBO) {
-        return taskBaseInfoService.getRouterStrategy(taskDetailInfoBO.getGroupKey(), taskDetailInfoBO.getBizKey(), taskDetailInfoBO.getTopic());
+    public void removeBackup(CallerTaskDTO callerTaskDTO){
+        int length = cacheService.getNodeMap().size()/2;
+        cacheService.removeBackup(ImmutableList.of(String.valueOf(length)),ImmutableList.of(callerTaskDTO.toString()));
     }
-}
+ }

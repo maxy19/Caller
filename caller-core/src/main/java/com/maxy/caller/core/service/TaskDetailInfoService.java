@@ -3,6 +3,7 @@ package com.maxy.caller.core.service;
 import com.github.pagehelper.PageInfo;
 import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskDetailInfoBO;
+import com.maxy.caller.dto.CallerTaskDTO;
 
 import java.util.Date;
 import java.util.List;
@@ -32,6 +33,5 @@ public interface TaskDetailInfoService extends CommonService {
 
     TaskDetailInfoBO get(String groupKey, String bizKey, String topic, Date executionTime);
 
-
-    Byte getRouterStrategy(TaskDetailInfoBO taskDetailInfoBO);
+    void removeBackup(CallerTaskDTO callerTaskDTO);
 }

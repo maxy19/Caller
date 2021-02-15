@@ -3,6 +3,7 @@ package com.maxy.caller.core.service;
 import com.maxy.caller.bo.TaskBaseInfoBO;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.bo.TaskLogBO;
+import com.maxy.caller.dto.CallerTaskDTO;
 
 /**
  * @Author maxy
@@ -19,6 +20,9 @@ public interface CommonService {
 
     default String getGroupName(TaskBaseInfoBO taskBaseInfoBO) {
         return String.join(":", taskBaseInfoBO.getGroupKey(), taskBaseInfoBO.getBizKey());
+    }
+    default String getGroupName(CallerTaskDTO callerTaskDTO) {
+        return String.join(":", callerTaskDTO.getGroupKey(), callerTaskDTO.getBizKey());
     }
 
     default String getGroupName(TaskDetailInfoBO taskDetailInfoBO) {

@@ -146,7 +146,8 @@ public class NettyServerHelper {
             taskDetailInfoBO.setExecutionStatus(resultDTO.isSuccess()
                     ? EXECUTION_SUCCEED.getCode() : EXECUTION_FAILED.getCode());
             taskDetailInfoService.update(taskDetailInfoBO);
-            taskLogService.saveClientResult(taskDetailInfoBO,resultDTO.getMessage(), parse(channel));
+            taskDetailInfoService.removeBackup(dto);
+            taskLogService.saveClientResult(taskDetailInfoBO, resultDTO.getMessage(), parse(channel));
         });
         return this;
     };
