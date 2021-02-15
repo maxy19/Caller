@@ -60,8 +60,8 @@ public class MonitorAlarmWorker implements AdminWorker {
                                 log.error("sendSimpleMail#发送邮件出现异常!!", e);
                                 taskLogService.updateAlarmStatus(taskLogBO, LOCK.getCode(), ALARM_FAIL.getCode());
                             }
+                            taskLogService.updateAlarmStatus(taskLogBO, LOCK.getCode(), ALARM_SUCCESS.getCode());
                         }
-                        taskLogService.updateAlarmStatus(taskLogBO, LOCK.getCode(), ALARM_SUCCESS.getCode());
                     } else {
                         //没有填写邮件的 设置为不需要发送
                         taskLogService.updateAlarmStatus(taskLogBO, DEFAULT.getCode(), NO_ALARM.getCode());
