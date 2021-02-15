@@ -15,7 +15,7 @@ import javax.mail.internet.MimeMessage;
 import java.io.File;
 
 /**
- * @author maxuyang
+ * @author maxy
  */
 @Service
 @Log4j2

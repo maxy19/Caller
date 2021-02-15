@@ -5,7 +5,7 @@ import com.maxy.caller.pojo.DelayTask;
 import java.util.List;
 
 /**
- * @Author maxuyang
+ * @Author maxy
  **/
 public interface DelayTaskService {
 

@@ -1,7 +1,7 @@
 package com.maxy.caller.admin.enums;
 
 /**
- * @Author maxuyang
+ * @Author maxy
  **/
 public enum AlarmStatusEnum {
 

@@ -1,7 +1,7 @@
 package com.maxy.caller.core.enums;
 
 /**
- * @Author maxuyang
+ * @Author maxy
  **/
 public enum EventEnum {
     /**

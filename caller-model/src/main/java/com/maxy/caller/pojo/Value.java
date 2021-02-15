@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * @Author maxuyang
+ * @Author maxy
  **/
 @Data
 @NoArgsConstructor

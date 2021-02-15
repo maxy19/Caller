@@ -5,7 +5,7 @@ import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.bo.TaskLogBO;
 
 /**
- * @Author maxuyang
+ * @Author maxy
  **/
 public interface CommonService {
 

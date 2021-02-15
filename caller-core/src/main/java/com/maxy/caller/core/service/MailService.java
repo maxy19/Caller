@@ -1,7 +1,7 @@
 package com.maxy.caller.core.service;
 
 /**
- * @author maxuyang
+ * @author maxy
  */
 public interface MailService {
 
