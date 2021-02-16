@@ -41,7 +41,7 @@ public class CallerSampleTest {
         delayTask2.setGroupKey("taobao");
         delayTask2.setBizKey("order");
         delayTask2.setTopic("clsExpireOrder");
-        delayTask2.setExecutionTime(DateUtils.addMinutes(5));
+        delayTask2.setExecutionTime(DateUtils.addMinutes(10));
         delayTask2.setExecutionParam("你好测试成功!!");
         delayTask2.setTimeout(3000);
         delayTask2.setRetryNum((byte) 1);

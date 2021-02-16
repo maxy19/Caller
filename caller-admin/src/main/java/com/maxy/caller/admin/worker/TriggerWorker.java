@@ -1,5 +1,6 @@
 package com.maxy.caller.admin.worker;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -26,6 +27,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.Date;
@@ -39,6 +41,7 @@ import java.util.concurrent.TimeoutException;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXPIRED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.RETRYING;
+import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX_BACKUP_FORMAT;
 import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX_FORMAT;
 import static com.maxy.caller.core.utils.CallerUtils.parse;
 
@@ -65,12 +68,28 @@ public class TriggerWorker implements AdminWorker {
     private NettyServerHelper nettyServerHelper;
     private ThreadPoolConfig threadPoolConfig = ThreadPoolConfig.getInstance();
     private ExecutorService worker = threadPoolConfig.getSingleThreadExecutor(true);
+    private ExecutorService backupWorker = threadPoolConfig.getSingleThreadExecutor(true);
     private ScheduledExecutorService scheduledExecutor = threadPoolConfig.getPublicScheduledExecutor(true);
     private ExecutorService executorService = threadPoolConfig.getPublicScheduledExecutor(true);
     private ExecutorService retryService = threadPoolConfig.getPublicScheduledExecutor(true);
     private ListeningExecutorService listeningWorker = MoreExecutors.listeningDecorator(executorService);
     private CacheTimer cacheTimer = CacheTimer.getInstance();
     private volatile boolean toggle = true;
+
+    @PostConstruct
+    public void init() {
+        backupWorker.execute(() -> {
+            int size = cacheService.getNodeMap().size();
+            for (int i = 0; i < size / 2; i++) {
+                List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_BACKUP_FORMAT.join(i));
+                List<String> tasks = cacheService.getQueueDataByBackup(keys, ImmutableList.of("1000"));
+                if(CollectionUtils.isEmpty(tasks)){
+                    continue;
+                }
+                invoke(tasks);
+            }
+        });
+    }
 
     @Override
     public void start() {
@@ -93,8 +112,13 @@ public class TriggerWorker implements AdminWorker {
             //获取索引列表
             Date currentDate = new Date();
             for (int index = 0, length = size / 2; index < length; index++) {
+                List<Object> queueData = getQueueData(currentDate, index);
+                if (CollectionUtils.isEmpty(queueData)) {
+                    continue;
+                }
                 //循环执行
-                invokeAll(getQueueData(currentDate, index));
+                log.info("找到数据!!,index：{} ", index);
+                invokeAll(queueData);
             }
         } catch (Exception e) {
             log.error("pop#执行出队时发现异常!!", e);
@@ -112,7 +136,7 @@ public class TriggerWorker implements AdminWorker {
         List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_FORMAT.join(index));
         List<String> args = Arrays.asList("10",//length
                 "-inf",
-                String.valueOf(DateUtils.addDays(currentDate, 5).getTime()),
+                String.valueOf(DateUtils.addDays(currentDate, 10).getTime()),
                 "LIMIT", "0", adminConfigCenter.getLimitNum());
         return cacheService.getQueueData(keys, args);
     }
@@ -142,16 +166,21 @@ public class TriggerWorker implements AdminWorker {
      */
     private void invokeAll(List<Object> queueData) {
         for (int i = 0, length = queueData.size(); i < length; i++) {
-            List<String> zSetList = (List<String>) queueData.get(i);
-            for (String element : zSetList) {
-                CallerTaskDTO callerTaskDTO = JSONUtils.parseObject(element, CallerTaskDTO.class);
-                if (checkExpireTaskInfo(callerTaskDTO)) {
-                    continue;
-                }
-                cacheTimer.newTimeout(timeout -> {
-                    remoteClientMethod(callerTaskDTO);
-                }, callerTaskDTO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+            List<String> list = (List<String>) queueData.get(i);
+            invoke(list);
+        }
+    }
+
+    private void invoke(List<String> list) {
+        for (String element : list) {
+            log.debug("invokeAll#开始执行：{}", element);
+            CallerTaskDTO callerTaskDTO = JSONUtils.parseObject(element, CallerTaskDTO.class);
+            if (checkExpireTaskInfo(callerTaskDTO)) {
+                continue;
             }
+            cacheTimer.newTimeout(timeout -> {
+                remoteClientMethod(callerTaskDTO);
+            }, callerTaskDTO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -173,17 +202,17 @@ public class TriggerWorker implements AdminWorker {
             if (CollectionUtils.isNotEmpty(channels)) {
                 //获取channel
                 Channel channel = nettyServerHelper.getChannelByAddr(RouterStrategyEnum
-                                                   .get(taskBaseInfoService.getRouterStrategy(callerTaskDTO.getGroupKey(),
-                                                        callerTaskDTO.getBizKey(),
-                                                        callerTaskDTO.getTopic()),
-                                                        parse(channels)));
+                        .get(taskBaseInfoService.getRouterStrategy(callerTaskDTO.getGroupKey(),
+                                callerTaskDTO.getBizKey(),
+                                callerTaskDTO.getTopic()),
+                                parse(channels)));
                 //执行并监听结果
                 boolean result = executionSchedule(callerTaskDTO, channel);
                 //判断是否重试
                 if (result && callerTaskDTO.getRetryNum() > 0) {
                     retryExecute(callerTaskDTO, channel);
                 } else {
-                    TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(),callerTaskDTO.getBizKey(),
+                    TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(), callerTaskDTO.getBizKey(),
                                                                                   callerTaskDTO.getTopic(), callerTaskDTO.getExecutionTime());
                     taskDetailInfoBO.setExecutionStatus(EXECUTION_FAILED.getCode());
                     taskDetailInfoService.update(taskDetailInfoBO);
@@ -251,7 +280,7 @@ public class TriggerWorker implements AdminWorker {
     @Override
     public void stop() {
         toggle = false;
-        ThreadPoolRegisterCenter.destroy(worker, scheduledExecutor, listeningWorker, executorService);
+        ThreadPoolRegisterCenter.destroy(backupWorker, worker, scheduledExecutor, listeningWorker, executorService);
     }
 
 }

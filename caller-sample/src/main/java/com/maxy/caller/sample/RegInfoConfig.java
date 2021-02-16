@@ -1,5 +1,6 @@
 package com.maxy.caller.sample;
 
+import com.maxy.caller.common.utils.IpUtils;
 import com.maxy.caller.pojo.RegConfigInfo;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -11,8 +12,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RegInfoConfig {
 
-    @Value("${caller.reg.remote.ip:10.221.36.5}")
-    private String remoteIp;
+    //@Value("${caller.reg.remote.ip:10.239.201.240}")
+    private String remoteIp = IpUtils.getIp();
 
     @Value("${caller.reg.remote.port:8888}")
     private Integer remotePort;

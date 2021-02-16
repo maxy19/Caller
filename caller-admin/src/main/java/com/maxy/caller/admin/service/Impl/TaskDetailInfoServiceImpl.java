@@ -8,6 +8,7 @@ import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
 import com.maxy.caller.common.utils.DateUtils;
+import com.maxy.caller.common.utils.JSONUtils;
 import com.maxy.caller.core.service.TaskDetailInfoService;
 import com.maxy.caller.dto.CallerTaskDTO;
 import com.maxy.caller.model.TaskDetailInfo;
@@ -25,6 +26,8 @@ import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+
+import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX_BACKUP_FORMAT;
 
 /**
  * @Author maxy
@@ -75,6 +78,9 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
         criteria.andBizKeyEqualTo(taskDetailInfoBO.getGroupKey());
         criteria.andTopicEqualTo(taskDetailInfoBO.getTopic());
         taskDetailInfo.setUpdateTime(new Date());
+        if (taskDetailInfo.getId() != null) {
+            return taskDetailInfoExtendMapper.updateByPrimaryKeySelective(taskDetailInfo) > 0;
+        }
         return taskDetailInfoExtendMapper.updateByExampleSelective(taskDetailInfo, taskDetailInfoExample) > 0;
     }
 
@@ -110,10 +116,10 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     @Override
     public List<TaskDetailInfoBO> getPreReadInfo(Byte status, Date startTime, Date endTime) {
         TaskDetailInfoExample example = new TaskDetailInfoExample();
-        example.createCriteria().andExecutionStatusEqualTo(status);
-        example.createCriteria().andExecutionTimeGreaterThan(startTime);
-        example.createCriteria().andExecutionTimeLessThanOrEqualTo(endTime);
-        List<TaskDetailInfo> taskDetailInfos = taskDetailInfoExtendMapper.getPreReadInfo(example);
+        example.createCriteria().andExecutionStatusEqualTo(status)
+                .andExecutionTimeGreaterThan(startTime)
+                .andExecutionTimeLessThanOrEqualTo(endTime);
+        List<TaskDetailInfo> taskDetailInfos = taskDetailInfoExtendMapper.selectByExample(example);
         return BeanCopyUtils.copyListProperties(taskDetailInfos, TaskDetailInfoBO::new);
     }
 
@@ -148,9 +154,13 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
         }
         return null;
     }
+
     @Override
-    public void removeBackup(CallerTaskDTO callerTaskDTO){
-        int length = cacheService.getNodeMap().size()/2;
-        cacheService.removeBackup(ImmutableList.of(String.valueOf(length)),ImmutableList.of(callerTaskDTO.toString()));
+    public void removeBackup(CallerTaskDTO callerTaskDTO) {
+        int totalSlot = cacheService.getNodeMap().size() / 2;
+        for (int slot = 0; slot < totalSlot; slot++) {
+            String key = DICTIONARY_INDEX_BACKUP_FORMAT.join(slot);
+            cacheService.removeBackup(ImmutableList.of(key), ImmutableList.of(JSONUtils.toJSONString(callerTaskDTO)));
+        }
     }
- }
+}

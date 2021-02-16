@@ -38,6 +38,20 @@ public class CacheService {
         return jedisCluster.lpush(key, value);
     }
 
+    public List<String> getQueueDataByBackup(List<String> keys, List<String> args) {
+        String script = "local result = {}\n" +
+                "local length = ARGV[1]\n" +
+                "for i = 1, tonumber(length) do\n" +
+                "    local value = redis.call('RPOP', KEYS[1])\n" +
+                "    if (value) then\n" +
+                "        table.insert(result, value)\n" +
+                "        \n" +
+                "    end\n" +
+                "end\n" +
+                "return result\n";
+        return (List<String>) jedisCluster.eval(script, keys, args);
+    }
+
 
     public List<Object> getQueueData(List<String> keys, List<String> args) {
         String script = "local result = {}\n" +
@@ -57,7 +71,6 @@ public class CacheService {
                 "    end\n" +
                 "end\n" +
                 "return result";
-        log.debug("script:{}", script);
         return (List<Object>) jedisCluster.eval(script, keys, args);
     }
 
@@ -94,10 +107,8 @@ public class CacheService {
     }
 
     public void removeBackup(List<String> keys, List<String> args) {
-        String script = "for i = 1, tonumber(KEYS[1]) do\n" +
-                        "redis.call('LREM',\"caller:dic:index:{\"..i..\"}:backup\",ARGV[1])\n" +
-                        "end";
-        jedisCluster.eval(script, keys, args);
+        String script ="redis.call('LREM',KEYS[1],1,ARGV[1])";
+        jedisCluster.eval(script, keys,args);
     }
 
 

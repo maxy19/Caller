@@ -1,5 +1,6 @@
 package com.maxy.caller.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.maxy.caller.common.utils.JSONUtils;
 import lombok.Data;
 
@@ -44,6 +45,7 @@ public class CallerTaskDTO {
      */
     private Byte retryNum;
 
+    @JsonIgnore
     public String getUniqueKey() {
         return String.join(":", groupKey, bizKey, topic);
     }
