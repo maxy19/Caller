@@ -70,8 +70,8 @@ public class TriggerWorker implements AdminWorker {
     private ExecutorService worker = threadPoolConfig.getSingleThreadExecutor(true);
     private ExecutorService backupWorker = threadPoolConfig.getSingleThreadExecutor(true);
     private ScheduledExecutorService scheduledExecutor = threadPoolConfig.getPublicScheduledExecutor(true);
-    private ExecutorService executorService = threadPoolConfig.getPublicScheduledExecutor(true);
-    private ExecutorService retryService = threadPoolConfig.getPublicScheduledExecutor(true);
+    private ExecutorService executorService = threadPoolConfig.getPublicThreadPoolExecutor(true);
+    private ExecutorService retryService = threadPoolConfig.getPublicThreadPoolExecutor(true);
     private ListeningExecutorService listeningWorker = MoreExecutors.listeningDecorator(executorService);
     private CacheTimer cacheTimer = CacheTimer.getInstance();
     private volatile boolean toggle = true;

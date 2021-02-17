@@ -6,6 +6,7 @@ import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskBaseInfoBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
+import com.maxy.caller.core.exception.BusinessException;
 import com.maxy.caller.core.service.TaskBaseInfoService;
 import com.maxy.caller.model.TaskBaseInfo;
 import com.maxy.caller.model.TaskGroup;
@@ -23,6 +24,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.maxy.caller.core.enums.ExceptionEnum.FOUND_NOT_CURRENT_BASE_INFO;
 
 /**
  * @Author maxy
@@ -61,8 +64,7 @@ public class TaskBaseInfoServiceImpl implements TaskBaseInfoService {
         taskDetailInfo.setCreateTime(new Date());
         taskDetailInfo.setUpdateTime(new Date());
         if (taskBaseInfoMapper.insertSelective(taskDetailInfo) > 0) {
-            cacheInfo(taskBaseInfoBO);
-            return true;
+            return cacheInfo(taskBaseInfoBO);
         }
         return false;
     }
@@ -113,7 +115,7 @@ public class TaskBaseInfoServiceImpl implements TaskBaseInfoService {
         criteria.andTopicEqualTo(topic);
         List<TaskBaseInfo> taskBaseInfos = taskBaseInfoMapper.selectByExample(example);
         if (CollectionUtils.isEmpty(taskBaseInfos)) {
-            return null;
+            throw new BusinessException(FOUND_NOT_CURRENT_BASE_INFO);
         }
         TaskBaseInfoBO taskBaseInfoBO = new TaskBaseInfoBO();
         BeanCopyUtils.copy(taskBaseInfos.get(0), taskBaseInfoBO);
