@@ -27,6 +27,7 @@ public class CallerSendMsgSample implements DelayHandler {
     @Registered(topic = "sendMsg")
     public ResultDTO execute(String param) throws Exception {
         log.info("sendMsg：参数：{},时间：{}", param, DateUtils.formatDateTime(new Date()));
+        Thread.sleep(5000);
         return ResultDTO.getSuccessResponse();
     }
 
