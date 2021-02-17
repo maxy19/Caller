@@ -58,7 +58,7 @@ public class AdminFlowManager implements SmartInitializingSingleton, AdminWorker
             worker.start();
         });*/
         workerList.get(0).start();
-        //workerList.get(1).start();
+        workerList.get(1).start();
     }
 
     @Override

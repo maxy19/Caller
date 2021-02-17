@@ -1,6 +1,7 @@
 package com.maxy.caller.remoting.server.netty;
 
 import com.maxy.caller.common.utils.RemotingUtil;
+import com.maxy.caller.core.netty.AbstractNettyRemoting;
 import com.maxy.caller.core.netty.KryoDecode;
 import com.maxy.caller.core.netty.KryoEncode;
 import com.maxy.caller.core.netty.config.NettyServerConfig;
@@ -16,7 +17,6 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
-import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  **/
 @Log4j2
 @Component
-public class NettyServer {
+public class NettyServer extends AbstractNettyRemoting {
 
     @Resource
     private NettyServerConfig nettyServerConfig;
@@ -41,7 +41,7 @@ public class NettyServer {
     private EventLoopGroup eventLoopGroupSelector;
     private EventLoopGroup eventLoopGroupBoss;
     private InetSocketAddress inetSocketAddress;
-    private DefaultEventExecutorGroup defaultEventExecutorGroup;
+
 
     private boolean useEpoll() {
         return RemotingUtil.isLinuxPlatform()
@@ -59,20 +59,11 @@ public class NettyServer {
         } else {
             initNIO();
         }
-        initDefaultExecutor();
+        //多线程处理handle
+        initDefaultExecutor("caller-netty-server-handle-thread_%d",nettyServerConfig.getServerWorkerThreads());
     }
 
-    private void initDefaultExecutor() {
-        this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(
-                nettyServerConfig.getServerWorkerThreads(),
-                new ThreadFactory() {
-                    private AtomicInteger threadIndex = new AtomicInteger(0);
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        return new Thread(r, String.format("caller-netty-server-handle-thread_%d", this.threadIndex.incrementAndGet()));
-                    }
-                });
-    }
+
 
     /**
      * 初始化nio
@@ -184,5 +175,6 @@ public class NettyServer {
     public void stop(EventLoopGroup workerGroup, EventLoopGroup bossGroup) {
         workerGroup.shutdownGracefully();
         bossGroup.shutdownGracefully();
+        defaultEventExecutorGroup.shutdownGracefully();
     }
 }

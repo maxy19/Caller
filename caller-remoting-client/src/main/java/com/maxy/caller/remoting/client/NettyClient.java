@@ -1,5 +1,6 @@
 package com.maxy.caller.remoting.client;
 
+import com.maxy.caller.core.netty.AbstractNettyRemoting;
 import com.maxy.caller.core.netty.KryoDecode;
 import com.maxy.caller.core.netty.KryoEncode;
 import com.maxy.caller.core.netty.config.NettyClientConfig;
@@ -16,6 +17,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  **/
 @Log4j2
 @Component
-public class NettyClient {
+public class NettyClient extends AbstractNettyRemoting {
 
     EventLoopGroup eventExecutors = new NioEventLoopGroup();
     @Resource
@@ -37,6 +39,12 @@ public class NettyClient {
 
     public Bootstrap getBootstrap() {
         return bootstrap;
+    }
+
+    @PostConstruct
+    private void initialize() {
+        //多线程处理handle
+        initDefaultExecutor("caller-netty-client-handle-thread_%d", nettyClientConfig.getClientWorkerThreads());
     }
 
     public void start(String inetHost, Integer inetPort) {
@@ -52,12 +60,12 @@ public class NettyClient {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline()
-                                .addLast(new IdleStateHandler(0, 0, 120, TimeUnit.SECONDS))
+                                .addLast(defaultEventExecutorGroup, new IdleStateHandler(0, 0, 30, TimeUnit.SECONDS))
                                 //加码
-                                .addLast("encoder", new KryoEncode())
+                                .addLast(defaultEventExecutorGroup, "encoder", new KryoEncode())
                                 //解码
-                                .addLast("decoder", new KryoDecode())
-                                .addLast(nettyClientHandler);
+                                .addLast(defaultEventExecutorGroup, "decoder", new KryoDecode())
+                                .addLast(defaultEventExecutorGroup, nettyClientHandler);
                     }
                 });
         try {
@@ -83,6 +91,7 @@ public class NettyClient {
             log.warn("Caller客户端即将关闭.");
             eventExecutors.shutdownGracefully();
         }
+        defaultEventExecutorGroup.shutdownGracefully();
     }
 
 }
