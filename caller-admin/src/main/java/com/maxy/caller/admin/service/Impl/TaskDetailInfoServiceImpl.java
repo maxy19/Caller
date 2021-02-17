@@ -2,7 +2,6 @@ package com.maxy.caller.admin.service.Impl;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.google.common.collect.ImmutableList;
 import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskDetailInfoBO;
@@ -160,7 +159,7 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
         int totalSlot = cacheService.getNodeMap().size() / 2;
         for (int slot = 0; slot < totalSlot; slot++) {
             String key = DICTIONARY_INDEX_BACKUP_FORMAT.join(slot);
-            cacheService.removeBackup(ImmutableList.of(key), ImmutableList.of(JSONUtils.toJSONString(callerTaskDTO)));
+            cacheService.lrem(key, JSONUtils.toJSONString(callerTaskDTO));
         }
     }
 }

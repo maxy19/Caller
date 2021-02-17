@@ -21,7 +21,7 @@ import javax.annotation.Resource;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class CallerSampleTest {
+public class CallerOrderSampleTest {
 
     @Resource
     private DelayTaskService delayTaskService;

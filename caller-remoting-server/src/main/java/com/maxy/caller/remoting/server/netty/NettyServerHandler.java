@@ -95,7 +95,7 @@ public class NettyServerHandler extends ChannelDuplexHandler {
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
         log.debug("handlerRemoved#handler从channel的pipeline中移除.客户端地址:{}", ctx.channel().remoteAddress());
         super.handlerRemoved(ctx);
-        nettServerHelper.getActiveChannel().values().remove(ctx.channel());
+        nettServerHelper.removeNotActiveAddress(ctx.channel());
     }
 
     @Override

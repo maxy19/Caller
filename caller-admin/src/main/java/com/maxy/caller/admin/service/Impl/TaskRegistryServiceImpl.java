@@ -55,7 +55,6 @@ public class TaskRegistryServiceImpl implements TaskRegistryService {
         example.createCriteria().andGroupKeyEqualTo(groupKey);
         example.createCriteria().andBizKeyEqualTo(bizKey);
         example.createCriteria().andRegistryAddressEqualTo(address);
-        taskRegistryMapper.deleteByExample(example);
-        return true;
+        return taskRegistryMapper.deleteByExample(example) > 0;
     }
 }

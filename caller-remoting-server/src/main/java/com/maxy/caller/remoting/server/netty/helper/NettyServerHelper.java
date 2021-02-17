@@ -112,20 +112,25 @@ public class NettyServerHelper {
             Pinger pinger = (Pinger) getRequest(protocolMsg);
             channel.writeAndFlush(ProtocolMsg.toEntity("服务端收到客户端的心跳消息!"));
             List<Channel> channels = activeChannel.get(pinger.getUniqueName());
-            if (!channels.contains(channel)) {
-                channels.removeIf(element -> {
-                    if (!element.isActive()) {
-                        List<String> keys = Splitter.on(":").splitToList(pinger.getUniqueName());
-                        taskRegistryService.deleteByNotActive(keys.get(0), keys.get(1), parse(element.remoteAddress()));
-                        return true;
-                    }
-                    return false;
-                });
-                channels.add(channel);
-            }
+            //去掉不活跃的
+            channels.removeIf(element -> {
+                if (!element.isActive()) {
+                    removeNotActiveAddress(element);
+                    List<String> keys = Splitter.on(":").splitToList(pinger.getUniqueName());
+                    taskRegistryService.deleteByNotActive(keys.get(0), keys.get(1), parse(channel.remoteAddress()));
+                    return true;
+                }
+                return false;
+            });
         });
         return this;
     };
+
+    public void removeNotActiveAddress(Channel channel) {
+        activeChannel.values().remove(channel);
+        ipChannelMapping.remove(parse(channel));
+    }
+
     /**
      * 服务端解析客户端事件
      */

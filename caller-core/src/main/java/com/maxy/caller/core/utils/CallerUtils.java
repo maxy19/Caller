@@ -1,23 +1,24 @@
 package com.maxy.caller.core.utils;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.TreeMultimap;
-import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.IpUtils;
 import com.maxy.caller.common.utils.MD5EncryptUtil;
-import com.maxy.caller.pojo.DictionaryIndexData;
 import io.netty.channel.Channel;
-import org.apache.commons.collections.CollectionUtils;
+import lombok.extern.log4j.Log4j2;
 
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.SocketAddress;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
-import java.util.NavigableSet;
 import java.util.stream.Collectors;
 
 /**
  * @author maxy
  */
+@Log4j2
 public class CallerUtils {
 
     private CallerUtils() {
@@ -54,29 +55,77 @@ public class CallerUtils {
         return "";
     }
 
-    public static List<DictionaryIndexData> filter(List<TaskDetailInfoBO> taskDetailInfoBOList) {
-        TreeMultimap<String, Long> map = TreeMultimap.create();
-        taskDetailInfoBOList.forEach(ele -> {
-            map.put(String.join(":", ele.getGroupKey(), ele.getBizKey(), ele.getTopic()), ele.getExecutionTime().getTime());
-        });
-        //group+biz+topic 10:00
-        //group+biz+topic 11:00
-        //group+biz+topic 12:00
-        return map.keySet().stream().map(key -> {
-            NavigableSet<Long> executionTimeSet = map.get(key);
-            return DictionaryIndexData.builder().key(key).time(executionTimeSet.last()).build();
-        }).collect(Collectors.toList());
-    }
-
-    public static List<String> filterIp(List<String> addresses) {
-        if (CollectionUtils.isNotEmpty(addresses)) {
-            return addresses.stream().map(ele -> Splitter.on(":").splitToList(ele).get(0)).collect(Collectors.toList());
-        }
-        return Collections.emptyList();
-    }
-
     public static String getReqId() {
         return MD5EncryptUtil.encrypt(System.nanoTime() + IpUtils.getIp());
+    }
+
+    public static String getLocalAddress() {
+        try {
+            // Traversal Network interface to get the first non-loopback and non-private address
+            Enumeration<NetworkInterface> enumeration = NetworkInterface.getNetworkInterfaces();
+            ArrayList<String> ipv4Result = new ArrayList<String>();
+            ArrayList<String> ipv6Result = new ArrayList<String>();
+            while (enumeration.hasMoreElements()) {
+                final NetworkInterface networkInterface = enumeration.nextElement();
+                final Enumeration<InetAddress> en = networkInterface.getInetAddresses();
+                while (en.hasMoreElements()) {
+                    final InetAddress address = en.nextElement();
+                    if (!address.isLoopbackAddress()) {
+                        if (address instanceof Inet6Address) {
+                            ipv6Result.add(normalizeHostAddress(address));
+                        } else {
+                            ipv4Result.add(normalizeHostAddress(address));
+                        }
+                    }
+                }
+            }
+            // prefer ipv4
+            if (!ipv4Result.isEmpty()) {
+                for (String ip : ipv4Result) {
+                    if (ip.startsWith("127.0") || ip.startsWith("192.168")) {
+                        continue;
+                    }
+
+                    return ip;
+                }
+
+                return ipv4Result.get(ipv4Result.size() - 1);
+            } else if (!ipv6Result.isEmpty()) {
+                return ipv6Result.get(0);
+            }
+            //If failed to find,fall back to localhost
+            final InetAddress localHost = InetAddress.getLocalHost();
+            return normalizeHostAddress(localHost);
+        } catch (Exception e) {
+            log.error("获取本地地址失败!", e);
+        }
+
+        return null;
+    }
+
+    public static String normalizeHostAddress(final InetAddress localHost) {
+        if (localHost instanceof Inet6Address) {
+            return "[" + localHost.getHostAddress() + "]";
+        } else {
+            return localHost.getHostAddress();
+        }
+    }
+
+    public static SocketAddress string2SocketAddress(final String addr) {
+        int split = addr.lastIndexOf(":");
+        String host = addr.substring(0, split);
+        String port = addr.substring(split + 1);
+        InetSocketAddress isa = new InetSocketAddress(host, Integer.parseInt(port));
+        return isa;
+    }
+
+    public static String socketAddress2String(final SocketAddress addr) {
+        StringBuilder sb = new StringBuilder();
+        InetSocketAddress inetSocketAddress = (InetSocketAddress) addr;
+        sb.append(inetSocketAddress.getAddress().getHostAddress());
+        sb.append(":");
+        sb.append(inetSocketAddress.getPort());
+        return sb.toString();
     }
 
 

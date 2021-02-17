@@ -83,7 +83,7 @@ public class TriggerWorker implements AdminWorker {
             for (int i = 0; i < size / 2; i++) {
                 List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_BACKUP_FORMAT.join(i));
                 List<String> tasks = cacheService.getQueueDataByBackup(keys, ImmutableList.of("1000"));
-                if(CollectionUtils.isEmpty(tasks)){
+                if (CollectionUtils.isEmpty(tasks)) {
                     continue;
                 }
                 invoke(tasks);
@@ -153,6 +153,7 @@ public class TriggerWorker implements AdminWorker {
             TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(), callerTaskDTO.getBizKey(), callerTaskDTO.getTopic(), callerTaskDTO.getExecutionTime());
             taskDetailInfoBO.setExecutionStatus(EXPIRED.getCode());
             taskDetailInfoService.update(taskDetailInfoBO);
+            taskDetailInfoService.removeBackup(callerTaskDTO);
             taskLogService.save(taskDetailInfoBO);
             return true;
         }
@@ -199,26 +200,23 @@ public class TriggerWorker implements AdminWorker {
                 return;
             }
             //调用远程触发客户端
-            if (CollectionUtils.isNotEmpty(channels)) {
-                //获取channel
-                Channel channel = nettyServerHelper.getChannelByAddr(RouterStrategyEnum
-                        .get(taskBaseInfoService.getRouterStrategy(callerTaskDTO.getGroupKey(),
-                                callerTaskDTO.getBizKey(),
-                                callerTaskDTO.getTopic()),
-                                parse(channels)));
-                //执行并监听结果
-                boolean result = executionSchedule(callerTaskDTO, channel);
-                //判断是否重试
-                if (result && callerTaskDTO.getRetryNum() > 0) {
-                    retryExecute(callerTaskDTO, channel);
-                } else {
-                    TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(), callerTaskDTO.getBizKey(),
-                                                                                  callerTaskDTO.getTopic(), callerTaskDTO.getExecutionTime());
-                    taskDetailInfoBO.setExecutionStatus(EXECUTION_FAILED.getCode());
-                    taskDetailInfoService.update(taskDetailInfoBO);
-                    taskDetailInfoService.removeBackup(callerTaskDTO);
-                    taskLogService.save(taskDetailInfoBO, parse(channel), null);
-                }
+            Channel channel = nettyServerHelper.getChannelByAddr(RouterStrategyEnum
+                    .get(taskBaseInfoService.getRouterStrategy(callerTaskDTO.getGroupKey(),
+                            callerTaskDTO.getBizKey(),
+                            callerTaskDTO.getTopic()),
+                            parse(channels)));
+            //执行并监听结果
+            boolean result = executionSchedule(callerTaskDTO, channel);
+            //判断是否重试
+            if (result && callerTaskDTO.getRetryNum() > 0) {
+                retryExecute(callerTaskDTO, channel);
+            } else {
+                TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(), callerTaskDTO.getBizKey(),
+                        callerTaskDTO.getTopic(), callerTaskDTO.getExecutionTime());
+                taskDetailInfoBO.setExecutionStatus(EXECUTION_FAILED.getCode());
+                taskDetailInfoService.update(taskDetailInfoBO);
+                taskDetailInfoService.removeBackup(callerTaskDTO);
+                taskLogService.save(taskDetailInfoBO, parse(channel), null);
             }
         });
     }

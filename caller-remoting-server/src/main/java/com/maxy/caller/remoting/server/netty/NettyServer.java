@@ -1,5 +1,6 @@
 package com.maxy.caller.remoting.server.netty;
 
+import com.maxy.caller.common.utils.RemotingUtil;
 import com.maxy.caller.core.netty.KryoDecode;
 import com.maxy.caller.core.netty.KryoEncode;
 import com.maxy.caller.core.netty.config.NettyServerConfig;
@@ -9,14 +10,19 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,21 +38,92 @@ public class NettyServer {
     private NettyServerConfig nettyServerConfig;
     @Resource
     private NettyServerHandler nettyServerHandler;
+    private EventLoopGroup eventLoopGroupSelector;
+    private EventLoopGroup eventLoopGroupBoss;
+    private InetSocketAddress inetSocketAddress;
+    private DefaultEventExecutorGroup defaultEventExecutorGroup;
 
-    public Boolean start(InetAddress localAddress, Integer port) {
+    private boolean useEpoll() {
+        return RemotingUtil.isLinuxPlatform()
+                && nettyServerConfig.isUseEpollNativeSelector()
+                && Epoll.isAvailable();
+    }
 
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1, new ThreadFactory() {
-            AtomicInteger threadCount = new AtomicInteger();
+    @PostConstruct
+    private void initialize() {
+        //初始化地址
+        inetSocketAddress = new InetSocketAddress(this.nettyServerConfig.getServerPort());
+        //初始化事件
+        if (useEpoll()) {
+            initEpoll();
+        } else {
+            initNIO();
+        }
+        initDefaultExecutor();
+    }
 
+    private void initDefaultExecutor() {
+        this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(
+                nettyServerConfig.getServerWorkerThreads(),
+                new ThreadFactory() {
+                    private AtomicInteger threadIndex = new AtomicInteger(0);
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        return new Thread(r, String.format("caller-netty-server-handle-thread_%d", this.threadIndex.incrementAndGet()));
+                    }
+                });
+    }
+
+    /**
+     * 初始化nio
+     */
+    private void initNIO() {
+        this.eventLoopGroupBoss = new NioEventLoopGroup(1, new ThreadFactory() {
+            private AtomicInteger threadIndex = new AtomicInteger(0);
             @Override
             public Thread newThread(Runnable r) {
-                return new Thread(r, String.format("caller-netty-boss-thread-%d", threadCount.incrementAndGet()));
+                return new Thread(r, String.format("caller-netty-nio-boss_%d", this.threadIndex.incrementAndGet()));
             }
         });
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+
+        this.eventLoopGroupSelector = new NioEventLoopGroup(nettyServerConfig.getServerSelectorThreads(), new ThreadFactory() {
+            private AtomicInteger threadIndex = new AtomicInteger(0);
+            private int threadTotal = nettyServerConfig.getServerSelectorThreads();
+            @Override
+            public Thread newThread(Runnable r) {
+                return new Thread(r, String.format("caller-netty-server-nio-selector_%d_%d", threadTotal, this.threadIndex.incrementAndGet()));
+            }
+        });
+    }
+
+    /**
+     * 初始化epoll
+     */
+    private void initEpoll() {
+        this.eventLoopGroupBoss = new EpollEventLoopGroup(1, new ThreadFactory() {
+            private AtomicInteger threadIndex = new AtomicInteger(0);
+            @Override
+            public Thread newThread(Runnable r) {
+                return new Thread(r, String.format("caller-netty-epoll-boss_%d", this.threadIndex.incrementAndGet()));
+            }
+        });
+
+        this.eventLoopGroupSelector = new EpollEventLoopGroup(nettyServerConfig.getServerSelectorThreads(), new ThreadFactory() {
+            private AtomicInteger threadIndex = new AtomicInteger(0);
+            private int threadTotal = nettyServerConfig.getServerSelectorThreads();
+            @Override
+            public Thread newThread(Runnable r) {
+                return new Thread(r, String.format("caller-netty-server-epoll-selector_%d_%d", threadTotal, this.threadIndex.incrementAndGet()));
+            }
+        });
+    }
+
+    public Boolean start() {
+
+        //初始化boos 与 selector 根据不同系统选择使用nio 还是 ePoll
         ServerBootstrap bootstrap = new ServerBootstrap();
-        bootstrap.group(bossGroup, workerGroup)
-                .channel(NioServerSocketChannel.class)
+        bootstrap.group(eventLoopGroupBoss, eventLoopGroupSelector)
+                .channel(useEpoll() ? EpollServerSocketChannel.class : NioServerSocketChannel.class)
                 /**
                  * 服务端处理客户端连接请求是顺序处理的，所以同一时间只能处理一个客户端连接，多个客户端来的时候，
                  * 服务端将不能处理的客户端连接请求放在队列中等待处理，backlog参数指定了队列的大小。
@@ -74,32 +151,35 @@ public class NettyServer {
                  * 禁用了Nagle算法 如果开启则会造成网络延迟因为此算法是将包数量与大小积攒到一定量再发送
                  */
                 .childOption(ChannelOption.TCP_NODELAY, true)
+                .localAddress(inetSocketAddress)
                 .childHandler(new ChannelInitializer() {
                     @Override
                     protected void initChannel(Channel ch) throws Exception {
                         //心跳检测
-                        ch.pipeline().addLast(new IdleStateHandler(0, 0, 120, TimeUnit.SECONDS))
+                        ch.pipeline()
+                                .addLast(defaultEventExecutorGroup, new IdleStateHandler(0, 0, 30, TimeUnit.SECONDS))
                                 //加码
-                                .addLast("encoder", new KryoEncode())
+                                .addLast(defaultEventExecutorGroup, "encoder", new KryoEncode())
                                 //解码
-                                .addLast("decoder", new KryoDecode())
+                                .addLast(defaultEventExecutorGroup, "decoder", new KryoDecode())
                                 //自定义处理
-                                .addLast(nettyServerHandler);
+                                .addLast(defaultEventExecutorGroup, nettyServerHandler);
                     }
                 });
         ChannelFuture cf = null;
         try {
-            cf = bootstrap.bind(localAddress, port).sync();
-            log.info("Caller服务端启动完毕!!! 服务器地址:{}.端口:{}", localAddress, port);
+            cf = bootstrap.bind().sync();
+            log.info("Caller服务端启动完毕!!! 服务器地址:{}.端口:{}", inetSocketAddress.getAddress(), inetSocketAddress.getPort());
             //对关闭通道进行监听
             cf.channel().closeFuture().sync();
         } catch (Exception e) {
             log.error("服务端出现异常.", e);
-            stop(workerGroup, bossGroup);
+            stop(eventLoopGroupSelector, eventLoopGroupBoss);
             return false;
         }
         return true;
     }
+
 
     public void stop(EventLoopGroup workerGroup, EventLoopGroup bossGroup) {
         workerGroup.shutdownGracefully();

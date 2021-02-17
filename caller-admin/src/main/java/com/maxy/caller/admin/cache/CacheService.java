@@ -106,10 +106,7 @@ public class CacheService {
         return jedisCluster.get(key);
     }
 
-    public void removeBackup(List<String> keys, List<String> args) {
-        String script ="redis.call('LREM',KEYS[1],1,ARGV[1])";
-        jedisCluster.eval(script, keys,args);
+    public void lrem(String key, String arg) {
+        jedisCluster.lrem(key, 1, arg);
     }
-
-
 }

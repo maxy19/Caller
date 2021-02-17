@@ -6,7 +6,6 @@ import com.maxy.caller.admin.worker.MonitorAlarmWorker;
 import com.maxy.caller.admin.worker.RegistryWorker;
 import com.maxy.caller.admin.worker.ScheduleWorker;
 import com.maxy.caller.admin.worker.TriggerWorker;
-import com.maxy.caller.common.utils.IpUtils;
 import com.maxy.caller.core.config.ThreadPoolConfig;
 import com.maxy.caller.core.netty.config.NettyServerConfig;
 import com.maxy.caller.core.utils.SpringContextUtils;
@@ -39,7 +38,7 @@ public class AdminFlowManager implements SmartInitializingSingleton, AdminWorker
     public void afterSingletonsInstantiated() {
         nettyStartService.execute(() -> {
             //启动netty服务端
-            nettyServer.start(IpUtils.getLocalAddress(), nettyServerConfig.getServerPort());
+            nettyServer.start();
         });
         //装载组件
         workerList.add(SpringContextUtils.getBean(TriggerWorker.class));
@@ -59,7 +58,7 @@ public class AdminFlowManager implements SmartInitializingSingleton, AdminWorker
             worker.start();
         });*/
         workerList.get(0).start();
-        workerList.get(1).start();
+        //workerList.get(1).start();
     }
 
     @Override

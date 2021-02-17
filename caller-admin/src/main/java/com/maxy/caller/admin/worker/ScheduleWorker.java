@@ -7,7 +7,6 @@ import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.common.utils.JSONUtils;
 import com.maxy.caller.core.config.ThreadPoolConfig;
 import com.maxy.caller.core.config.ThreadPoolRegisterCenter;
-import com.maxy.caller.core.service.TaskBaseInfoService;
 import com.maxy.caller.core.service.TaskDetailInfoService;
 import com.maxy.caller.core.service.TaskLockService;
 import com.maxy.caller.core.service.TaskLogService;
@@ -37,7 +36,6 @@ import java.util.stream.Collectors;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.ONLINE;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.READY;
 import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX_FORMAT;
-import static com.maxy.caller.core.enums.GenerateKeyEnum.INDEX_DATA_FORMAT;
 import static com.maxy.caller.core.enums.GenerateKeyEnum.ZSET_QUEUE_FORMAT;
 
 /**
@@ -55,8 +53,6 @@ public class ScheduleWorker implements AdminWorker {
     private TaskDetailInfoService taskDetailInfoService;
     @Resource
     private TaskLogService taskLogService;
-    @Resource
-    private TaskBaseInfoService taskBaseInfoService;
     @Resource
     private TaskLockService taskLockService;
     @Resource(name = "asTransactionManager")
@@ -139,10 +135,10 @@ public class ScheduleWorker implements AdminWorker {
         Set<String> indexDataSet = new LinkedHashSet<>();
         preReadInfoList.forEach(indexData -> {
             long slot = getSlot(indexData.getExecutionTime().getTime(), size / 2);
-            String indexDataFormat = INDEX_DATA_FORMAT.join(getUniqueName(indexData), slot);
+            String indexDataFormat = ZSET_QUEUE_FORMAT.join(getUniqueName(indexData), slot);
             if (!indexDataSet.contains(indexDataFormat)) {
                 indexDataSet.add(indexDataFormat);
-                //加入查询出来的数据并去重
+                //加入查询出来的数据并去重 同一个uniquKey{?}只需要一个就行,如果不去重则会对同一个uniqu{?} 查询多次
                 cacheService.lpush(DICTIONARY_INDEX_FORMAT.join(slot), indexDataFormat);
             }
         });
