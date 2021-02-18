@@ -111,7 +111,7 @@ public class NettyClientHandler extends ChannelDuplexHandler {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ProtocolMsg protocolMsg = (ProtocolMsg) msg;
         log.info("客户端读取信息:{}", protocolMsg);
-        BiFunction<ProtocolMsg, Channel, Object> consumer = nettyClientHelper.getEventMap().get(protocolMsg.getEventEnum());
+        BiFunction<ProtocolMsg, Channel, Object> consumer = nettyClientHelper.getEventMap().get(protocolMsg.getMsgTypeEnum());
         if (consumer != null) {
             consumer.apply(protocolMsg, ctx.channel());
         }

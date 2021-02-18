@@ -2,11 +2,8 @@ package com.maxy.caller.admin.worker;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.admin.config.AdminConfigCenter;
-import com.maxy.caller.admin.enums.RouterStrategyEnum;
 import com.maxy.caller.admin.service.AdminWorker;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.DateUtils;
@@ -34,10 +31,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.maxy.caller.admin.enums.RouterStrategyEnum.router;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXPIRED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.RETRYING;
@@ -69,10 +66,8 @@ public class TriggerWorker implements AdminWorker {
     private ThreadPoolConfig threadPoolConfig = ThreadPoolConfig.getInstance();
     private ExecutorService worker = threadPoolConfig.getSingleThreadExecutor(true);
     private ExecutorService backupWorker = threadPoolConfig.getSingleThreadExecutor(true);
-    private ScheduledExecutorService scheduledExecutor = threadPoolConfig.getPublicScheduledExecutor(true);
-    private ExecutorService executorService = threadPoolConfig.getPublicThreadPoolExecutor(true);
+    private ExecutorService executorSchedule = threadPoolConfig.getPublicThreadPoolExecutor(true);
     private ExecutorService retryService = threadPoolConfig.getPublicThreadPoolExecutor(true);
-    private ListeningExecutorService listeningWorker = MoreExecutors.listeningDecorator(executorService);
     private CacheTimer cacheTimer = CacheTimer.getInstance();
     private volatile boolean toggle = true;
 
@@ -193,30 +188,31 @@ public class TriggerWorker implements AdminWorker {
      */
     private void remoteClientMethod(CallerTaskDTO callerTaskDTO) {
         //netty call client
-        listeningWorker.execute(() -> {
+        executorSchedule.execute(() -> {
             List<Channel> channels = nettyServerHelper.getActiveChannel().get(getGroupName(callerTaskDTO));
             if (CollectionUtils.isEmpty(channels)) {
                 log.warn("没有找打可以连接的通道!!!!.");
                 return;
             }
             //调用远程触发客户端
-            Channel channel = nettyServerHelper.getChannelByAddr(RouterStrategyEnum
-                    .get(taskBaseInfoService.getRouterStrategy(callerTaskDTO.getGroupKey(),
-                            callerTaskDTO.getBizKey(),
-                            callerTaskDTO.getTopic()),
-                            parse(channels)));
+            Channel channel = nettyServerHelper.getChannelByAddr(router(taskBaseInfoService.getRouterStrategy(callerTaskDTO.getGroupKey(),
+                    callerTaskDTO.getBizKey(),
+                    callerTaskDTO.getTopic()),
+                    parse(channels)));
             //执行并监听结果
             boolean result = executionSchedule(callerTaskDTO, channel);
-            //判断是否重试
-            if (result && callerTaskDTO.getRetryNum() > 0) {
-                retryExecute(callerTaskDTO, channel);
-            } else {
-                TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(), callerTaskDTO.getBizKey(),
-                        callerTaskDTO.getTopic(), callerTaskDTO.getExecutionTime());
-                taskDetailInfoBO.setExecutionStatus(EXECUTION_FAILED.getCode());
-                taskDetailInfoService.update(taskDetailInfoBO);
-                taskDetailInfoService.removeBackup(callerTaskDTO);
-                taskLogService.save(taskDetailInfoBO, parse(channel), null);
+            //发现异常如果需要重试将再次调用方法
+            if (result) {
+                if (callerTaskDTO.getRetryNum() > 0) {
+                    retryExecute(callerTaskDTO, channel);
+                } else {
+                    TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(), callerTaskDTO.getBizKey(),
+                                                                                  callerTaskDTO.getTopic(), callerTaskDTO.getExecutionTime());
+                    taskDetailInfoBO.fillStatusAndErrorMsg("执行远程方法异常!", EXECUTION_FAILED.getCode());
+                    taskDetailInfoService.update(taskDetailInfoBO);
+                    taskDetailInfoService.removeBackup(callerTaskDTO);
+                    taskLogService.save(taskDetailInfoBO, parse(channel), (byte) 0);
+                }
             }
         });
     }
@@ -278,7 +274,7 @@ public class TriggerWorker implements AdminWorker {
     @Override
     public void stop() {
         toggle = false;
-        ThreadPoolRegisterCenter.destroy(backupWorker, worker, scheduledExecutor, listeningWorker, executorService);
+        ThreadPoolRegisterCenter.destroy(backupWorker, worker, executorSchedule);
     }
 
 }

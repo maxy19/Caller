@@ -57,6 +57,15 @@ public class TaskDetailInfoBO {
      * 重试次数 默认 0：不执行重试
      */
     private Byte retryNum;
+    /**
+     * 错误信息
+     */
+    private String errorMsg;
+
+    public void fillStatusAndErrorMsg(String errorMsg, Byte status) {
+        this.errorMsg = errorMsg;
+        this.setExecutionStatus(status);
+    }
 
     @Override
     public String toString() {

@@ -58,7 +58,7 @@ public enum RouterStrategyEnum {
         this.function = function;
     }
 
-    public static String get(Byte code, List<String> addresses) {
+    public static String router(Byte code, List<String> addresses) {
         for (RouterStrategyEnum currentEnum : values()) {
             if (Objects.equals(currentEnum.code, code)) {
                 return currentEnum.function.apply(addresses);

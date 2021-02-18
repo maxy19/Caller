@@ -79,7 +79,7 @@ public class NettyServerHandler extends ChannelDuplexHandler {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ProtocolMsg protocolMsg = (ProtocolMsg) msg;
         log.info("channelRead0#channel中有可读的数据.客户端地址:{}", ctx.channel().remoteAddress());
-        BiConsumer<ProtocolMsg, Channel> consumer = nettServerHelper.getEventMap().get(protocolMsg.getEventEnum());
+        BiConsumer<ProtocolMsg, Channel> consumer = nettServerHelper.getEventMap().get(protocolMsg.getMsgTypeEnum());
         if (Objects.nonNull(consumer)) {
             consumer.accept(protocolMsg, ctx.channel());
         }

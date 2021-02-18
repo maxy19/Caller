@@ -15,7 +15,9 @@ public interface TaskLogService extends CommonService {
 
     List<TaskLogBO> findFailLog();
 
-    boolean initByBatchInsert(List<TaskDetailInfoBO> preReadInfoList);
+    boolean batchInsert(List<TaskDetailInfoBO> preReadInfoList, Byte status, String parse);
+
+    boolean batchInsert(List<TaskDetailInfoBO> taskDetailInfoBOList, Byte executorStatus);
 
     boolean save(TaskDetailInfoBO taskDetailInfoBO, String executeAddress, Byte retryNum);
 

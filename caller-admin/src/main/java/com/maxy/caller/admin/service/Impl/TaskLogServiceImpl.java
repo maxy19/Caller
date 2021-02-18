@@ -52,7 +52,7 @@ public class TaskLogServiceImpl implements TaskLogService {
     }
 
     @Override
-    public boolean initByBatchInsert(List<TaskDetailInfoBO> taskDetailInfoBOList) {
+    public boolean batchInsert(List<TaskDetailInfoBO> taskDetailInfoBOList, Byte executorStatus, String address) {
         List<TaskLog> collect = taskDetailInfoBOList.stream().map(taskDetailInfoBO -> {
             TaskLog taskLog = new TaskLog();
             taskLog.setGroupKey(taskDetailInfoBO.getGroupKey());
@@ -60,12 +60,18 @@ public class TaskLogServiceImpl implements TaskLogService {
             taskLog.setTopic(taskDetailInfoBO.getTopic());
             taskLog.setExecuteParam(taskDetailInfoBO.getExecutionParam());
             taskLog.setExecutorTime(taskDetailInfoBO.getExecutionTime());
-            taskLog.setRetryCount(taskDetailInfoBO.getRetryNum());
-            taskLog.setExecutorStatus(taskDetailInfoBO.getExecutionStatus());
+            taskLog.setRetryCount((byte) 0);
+            taskLog.setExecutorAddress(address);
+            taskLog.setExecutorStatus(executorStatus);
             taskLog.setAlarmStatus(AlarmStatusEnum.DEFAULT.getCode());
             return taskLog;
         }).collect(Collectors.toList());
         return taskLogExtendMapper.batchInsert(collect) > 0;
+    }
+
+    @Override
+    public boolean batchInsert(List<TaskDetailInfoBO> taskDetailInfoBOList, Byte executorStatus) {
+        return batchInsert(taskDetailInfoBOList,executorStatus,null);
     }
 
     @Override
@@ -85,6 +91,7 @@ public class TaskLogServiceImpl implements TaskLogService {
         taskLog.setExecutorStatus(taskDetailInfoBO.getExecutionStatus());
         taskLog.setAlarmStatus(AlarmStatusEnum.DEFAULT.getCode());
         taskLog.setCreateTime(new Date());
+        taskLog.setExecutorResultMsg(taskDetailInfoBO.getErrorMsg());
         return taskLogExtendMapper.insertSelective(taskLog) > 0;
     }
 
@@ -101,7 +108,7 @@ public class TaskLogServiceImpl implements TaskLogService {
         taskLog.setTopic(taskDetailInfoBO.getTopic());
         taskLog.setExecuteParam(taskDetailInfoBO.getExecutionParam());
         taskLog.setExecutorTime(taskDetailInfoBO.getExecutionTime());
-        taskLog.setRetryCount(taskDetailInfoBO.getRetryNum());
+        taskLog.setRetryCount((byte) 0);
         taskLog.setExecutorStatus(taskDetailInfoBO.getExecutionStatus());
         taskLog.setExecutorAddress(executeAddress);
         if (StringUtils.isNotBlank(message)) {
@@ -109,6 +116,7 @@ public class TaskLogServiceImpl implements TaskLogService {
         }
         taskLog.setCreateTime(new Date());
         taskLog.setAlarmStatus(AlarmStatusEnum.DEFAULT.getCode());
+        taskLog.setExecutorResultMsg(taskDetailInfoBO.getErrorMsg());
         return taskLogExtendMapper.insert(taskLog) > 0;
     }
 

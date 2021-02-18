@@ -2,7 +2,7 @@ package com.maxy.caller.remoting.client.helper;
 
 import com.google.common.base.Preconditions;
 import com.maxy.caller.core.config.DispatchCenter;
-import com.maxy.caller.core.enums.EventEnum;
+import com.maxy.caller.core.enums.MsgTypeEnum;
 import com.maxy.caller.core.netty.protocol.ProtocolMsg;
 import com.maxy.caller.dto.CallerTaskDTO;
 import com.maxy.caller.dto.ResultDTO;
@@ -35,13 +35,13 @@ public class NettyClientHelper {
     /**
      * 各种事件处理器
      */
-    private Map<EventEnum, BiFunction<ProtocolMsg, Channel, Object>> eventMap = new ConcurrentHashMap();
+    private Map<MsgTypeEnum, BiFunction<ProtocolMsg, Channel, Object>> eventMap = new ConcurrentHashMap();
 
     /**
      * 服务端客户端共有事件
      */
     {
-        eventMap.put(EventEnum.MESSAGE, (protocolMsg, channel) -> {
+        eventMap.put(MsgTypeEnum.MESSAGE, (protocolMsg, channel) -> {
             String msg = (String) getRequest(protocolMsg);
             log.info("客户端收到消息:{},远程地址:{}", msg, parse(channel));
             return this;
@@ -52,7 +52,7 @@ public class NettyClientHelper {
      * 客户端解析服务端
      */
     public Supplier<NettyClientHelper> callerTaskEvent = () -> {
-        eventMap.put(EventEnum.EXECUTE, (protocolMsg, channel) -> {
+        eventMap.put(MsgTypeEnum.EXECUTE, (protocolMsg, channel) -> {
             RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
             CallerTaskDTO callerTaskDTO = request.getCallerTaskDTO();
             log.info("callerTaskEvent#callerTaskDTO:{}", callerTaskDTO);

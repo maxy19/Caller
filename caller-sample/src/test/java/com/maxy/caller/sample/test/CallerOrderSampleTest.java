@@ -31,12 +31,12 @@ public class CallerOrderSampleTest {
     public void testSend() throws Exception {
         List<DelayTask> list = Lists.newArrayList();
         DelayTask delayTask = null;
-        for (int i = 0; i <10 ; i++) {
+        for (int i = 0; i <2 ; i++) {
             delayTask = new DelayTask();
             delayTask.setGroupKey("taobao");
             delayTask.setBizKey("order");
             delayTask.setTopic("clsExpireOrder");
-            delayTask.setExecutionTime(DateUtils.addMinutes(1));
+            delayTask.setExecutionTime(DateUtils.addSecond(30));
             delayTask.setExecutionParam("触发成功!!");
             delayTask.setTimeout(4000);
             delayTask.setRetryNum((byte) 1);

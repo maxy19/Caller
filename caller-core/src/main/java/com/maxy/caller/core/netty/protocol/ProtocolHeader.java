@@ -2,6 +2,7 @@ package com.maxy.caller.core.netty.protocol;
 
 
 import com.maxy.caller.common.utils.JSONUtils;
+import com.maxy.caller.core.enums.MsgTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,8 +10,11 @@ import lombok.NoArgsConstructor;
 
 import java.nio.charset.StandardCharsets;
 
+import static com.maxy.caller.core.enums.SerializationTypeEnum.KRYO;
+
 /**
  * 说明：协议消息头
+ *
  * @author maxy
  */
 @Data
@@ -25,16 +29,16 @@ public class ProtocolHeader {
     private short serialization;  // 序列号 2
     private int length;        // 长度 4
 
-    public static ProtocolHeader toEntity(Object transform){
-        return create(transform.toString().getBytes(StandardCharsets.UTF_8).length);
+    public static ProtocolHeader toEntity(Object transform, MsgTypeEnum msgType) {
+        return create(transform.toString().getBytes(StandardCharsets.UTF_8).length, msgType);
     }
 
-    private static ProtocolHeader create(int length) {
+    private static ProtocolHeader create(int length, MsgTypeEnum msgType) {
         ProtocolHeader protocolHeader = new ProtocolHeader();
         protocolHeader.setMagic((byte) 0x01);
-        protocolHeader.setMsgType((byte) 0x01);
+        protocolHeader.setMsgType(msgType.getCode());
         protocolHeader.setReserve((short) 0);
-        protocolHeader.setSerialization((short) 0);
+        protocolHeader.setSerialization(KRYO.getCode());
         protocolHeader.setLength(length);
         return protocolHeader;
     }
@@ -43,4 +47,6 @@ public class ProtocolHeader {
     public String toString() {
         return JSONUtils.toJSONString(this);
     }
+
+
 }

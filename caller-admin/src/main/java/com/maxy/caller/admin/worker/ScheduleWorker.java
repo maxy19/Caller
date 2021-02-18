@@ -94,6 +94,7 @@ public class ScheduleWorker implements AdminWorker {
     private void push() {
         TransactionStatus transaction = null;
         List<TaskDetailInfoBO> preReadInfoList = new ArrayList<>();
+        boolean flag = true;
         try {
             //开启事务
             transaction = dataSourceTransactionManager.getTransaction(transactionDefinition);
@@ -115,12 +116,15 @@ public class ScheduleWorker implements AdminWorker {
             dataSourceTransactionManager.commit(transaction);
         } catch (Exception e) {
             log.error("push#执行加入队列出现异常!!", e);
+            flag = false;
             if (Objects.nonNull(transaction)) {
                 dataSourceTransactionManager.rollback(transaction);
             }
         }
         //记录log
-        taskLogService.initByBatchInsert(preReadInfoList);
+        if (flag) {
+            taskLogService.batchInsert(preReadInfoList, READY.getCode());
+        }
     }
 
     private void addCacheQueue(List<TaskDetailInfoBO> preReadInfoList) {

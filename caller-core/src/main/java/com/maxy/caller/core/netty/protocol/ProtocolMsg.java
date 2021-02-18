@@ -2,7 +2,7 @@ package com.maxy.caller.core.netty.protocol;
 
 
 import com.maxy.caller.common.utils.JSONUtils;
-import com.maxy.caller.core.enums.EventEnum;
+import com.maxy.caller.core.enums.MsgTypeEnum;
 import com.maxy.caller.core.netty.pojo.Pinger;
 import com.maxy.caller.dto.CallerTaskDTO;
 import com.maxy.caller.dto.ResultDTO;
@@ -30,11 +30,11 @@ public class ProtocolMsg<T> {
 
     private ProtocolHeader protocolHeader;
     private String requestId = getReqId();
-    private EventEnum eventEnum;
+    private MsgTypeEnum msgTypeEnum;
     private T body;
 
-    public ProtocolMsg(EventEnum eventEnum) {
-        this.eventEnum = eventEnum;
+    public ProtocolMsg(MsgTypeEnum msgTypeEnum) {
+        this.msgTypeEnum = msgTypeEnum;
     }
 
     private ProtocolMsg() {
@@ -46,12 +46,12 @@ public class ProtocolMsg<T> {
      * @return
      */
     public static ProtocolMsg toEntity(RegConfigInfo regConfigInfo) {
-        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(EventEnum.REGISTRY);
+        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(MsgTypeEnum.REGISTRY);
         //set regConfigInfo
         RpcRequestDTO rpcRequestDTO = new RpcRequestDTO();
         rpcRequestDTO.setRegConfigInfo(regConfigInfo);
         //set header
-        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(rpcRequestDTO));
+        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(rpcRequestDTO, MsgTypeEnum.REGISTRY));
         //set body
         protocolMsg.setBody(rpcRequestDTO);
         return protocolMsg;
@@ -64,9 +64,9 @@ public class ProtocolMsg<T> {
      * @return
      */
     public static ProtocolMsg toEntity(String body) {
-        ProtocolMsg<String> protocolMsg = new ProtocolMsg<>(EventEnum.MESSAGE);
+        ProtocolMsg<String> protocolMsg = new ProtocolMsg<>(MsgTypeEnum.MESSAGE);
         //set header
-        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(body));
+        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(body, MsgTypeEnum.MESSAGE));
         //set body
         protocolMsg.setBody(body);
         return protocolMsg;
@@ -78,10 +78,10 @@ public class ProtocolMsg<T> {
      * @return
      */
     public static ProtocolMsg toEntity(Long timeMillis, String uniqName) {
-        ProtocolMsg<Pinger> protocolMsg = new ProtocolMsg<>(EventEnum.PINGER);
+        ProtocolMsg<Pinger> protocolMsg = new ProtocolMsg<>(MsgTypeEnum.PINGER);
         Pinger pinger = Pinger.builder().requestTime(timeMillis).uniqueName(uniqName).build();
         //set header
-        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(pinger));
+        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(pinger, MsgTypeEnum.PINGER));
         //set body
         protocolMsg.setBody(pinger);
         return protocolMsg;
@@ -93,13 +93,13 @@ public class ProtocolMsg<T> {
      * @return
      */
     public static ProtocolMsg toEntity(ResultDTO resultDTO, CallerTaskDTO callerTaskDTO) {
-        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(EventEnum.RESULT);
+        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(MsgTypeEnum.RESULT);
         //set resultDTO
         RpcRequestDTO rpcRequestDTO = new RpcRequestDTO();
         rpcRequestDTO.setResultDTO(resultDTO);
         rpcRequestDTO.setCallerTaskDTO(callerTaskDTO);
         //set header
-        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(rpcRequestDTO));
+        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(rpcRequestDTO, MsgTypeEnum.RESULT));
         //set body
         protocolMsg.setBody(rpcRequestDTO);
         return protocolMsg;
@@ -111,12 +111,12 @@ public class ProtocolMsg<T> {
      * @return
      */
     public static ProtocolMsg toEntity(CallerTaskDTO task) {
-        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(EventEnum.EXECUTE);
+        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(MsgTypeEnum.EXECUTE);
         //set regConfigInfo
         RpcRequestDTO rpcRequestDTO = new RpcRequestDTO();
         rpcRequestDTO.setCallerTaskDTO(task);
         //set header
-        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(rpcRequestDTO));
+        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(rpcRequestDTO, MsgTypeEnum.EXECUTE));
         //set body
         protocolMsg.setBody(rpcRequestDTO);
         return protocolMsg;
@@ -128,12 +128,12 @@ public class ProtocolMsg<T> {
      * @return
      */
     public static ProtocolMsg toEntity(List<DelayTask> delayTasks) {
-        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(EventEnum.DELAYTASK);
+        ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(MsgTypeEnum.DELAYTASK);
         //set regConfigInfo
         RpcRequestDTO rpcRequestDTO = new RpcRequestDTO();
         rpcRequestDTO.setDelayTasks(delayTasks);
         //set header
-        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(rpcRequestDTO));
+        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(rpcRequestDTO, MsgTypeEnum.DELAYTASK));
         //set body
         protocolMsg.setBody(rpcRequestDTO);
         return protocolMsg;
