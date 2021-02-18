@@ -40,7 +40,6 @@ public class ClientExecutor implements ApplicationContextAware, SmartInitializin
     private ExecutorService singleThreadExecutor = ThreadPoolConfig.getInstance().getSingleThreadExecutor(true);
     @Resource
     private RegConfigInfo regConfigInfo;
-    private CountDownLatch countDownLatch = new CountDownLatch(1);
 
     @Override
     public void afterSingletonsInstantiated() {
@@ -53,14 +52,16 @@ public class ClientExecutor implements ApplicationContextAware, SmartInitializin
         RegisteredFlowProcessor.process(applicationContext);
         //校验信息
         validate(regConfigInfo);
+        //设置栅栏
+        CountDownLatch countDownLatch = new CountDownLatch(1);
         //开启netty
         singleThreadExecutor.execute(() -> {
             nettyClient.start(regConfigInfo.getRemoteIp(), regConfigInfo.getRemotePort(), countDownLatch);
         });
         try {
             countDownLatch.await(5, TimeUnit.SECONDS);
-        }catch (Exception e){
-            log.error("",e);
+        }catch (InterruptedException e){
+            log.error("netty客户端启动失败!!",e);
         }
     }
 
