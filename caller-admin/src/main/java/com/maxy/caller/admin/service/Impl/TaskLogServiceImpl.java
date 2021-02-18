@@ -54,7 +54,7 @@ public class TaskLogServiceImpl implements TaskLogService {
     @Override
     public boolean initByBatchInsert(List<TaskDetailInfoBO> taskDetailInfoBOList) {
         List<TaskLog> collect = taskDetailInfoBOList.stream().map(taskDetailInfoBO -> {
-            TaskLog taskLog = createTaskLog();
+            TaskLog taskLog = new TaskLog();
             taskLog.setGroupKey(taskDetailInfoBO.getGroupKey());
             taskLog.setBizKey(taskDetailInfoBO.getBizKey());
             taskLog.setTopic(taskDetailInfoBO.getTopic());
@@ -66,10 +66,6 @@ public class TaskLogServiceImpl implements TaskLogService {
             return taskLog;
         }).collect(Collectors.toList());
         return taskLogExtendMapper.batchInsert(collect) > 0;
-    }
-
-    private TaskLog createTaskLog() {
-        return new TaskLog();
     }
 
     @Override
@@ -88,6 +84,7 @@ public class TaskLogServiceImpl implements TaskLogService {
         taskLog.setExecutorTime(taskDetailInfoBO.getExecutionTime());
         taskLog.setExecutorStatus(taskDetailInfoBO.getExecutionStatus());
         taskLog.setAlarmStatus(AlarmStatusEnum.DEFAULT.getCode());
+        taskLog.setCreateTime(new Date());
         return taskLogExtendMapper.insertSelective(taskLog) > 0;
     }
 
@@ -110,6 +107,7 @@ public class TaskLogServiceImpl implements TaskLogService {
         if (StringUtils.isNotBlank(message)) {
             taskLog.setExecutorResultMsg(message);
         }
+        taskLog.setCreateTime(new Date());
         taskLog.setAlarmStatus(AlarmStatusEnum.DEFAULT.getCode());
         return taskLogExtendMapper.insert(taskLog) > 0;
     }
@@ -125,6 +123,7 @@ public class TaskLogServiceImpl implements TaskLogService {
                 .andBizKeyEqualTo(taskLog.getBizKey())
                 .andTopicEqualTo(taskLog.getTopic());
         taskLog.setAlarmStatus(targetStatus);
+        taskLog.setCreateTime(new Date());
         return taskLogExtendMapper.updateByExample(taskLog, example) > 0;
     }
 

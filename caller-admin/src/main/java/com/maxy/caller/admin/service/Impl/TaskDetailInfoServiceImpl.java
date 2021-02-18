@@ -113,10 +113,9 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     }
 
     @Override
-    public List<TaskDetailInfoBO> getPreReadInfo(Byte status, Date startTime, Date endTime) {
+    public List<TaskDetailInfoBO> getPreReadInfo(Byte status, Date endTime) {
         TaskDetailInfoExample example = new TaskDetailInfoExample();
         example.createCriteria().andExecutionStatusEqualTo(status)
-                .andExecutionTimeGreaterThan(startTime)
                 .andExecutionTimeLessThanOrEqualTo(endTime);
         List<TaskDetailInfo> taskDetailInfos = taskDetailInfoExtendMapper.selectByExample(example);
         return BeanCopyUtils.copyListProperties(taskDetailInfos, TaskDetailInfoBO::new);

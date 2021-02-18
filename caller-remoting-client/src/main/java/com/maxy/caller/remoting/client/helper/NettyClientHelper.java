@@ -39,11 +39,11 @@ public class NettyClientHelper {
 
     /**
      * 服务端客户端共有事件
-     */ {
+     */
+    {
         eventMap.put(EventEnum.MESSAGE, (protocolMsg, channel) -> {
             String msg = (String) getRequest(protocolMsg);
-            log.info("" +
-                    "客户端收到消息:{},远程地址:{}", msg, parse(channel));
+            log.info("客户端收到消息:{},远程地址:{}", msg, parse(channel));
             return this;
         });
     }
@@ -55,7 +55,7 @@ public class NettyClientHelper {
         eventMap.put(EventEnum.EXECUTE, (protocolMsg, channel) -> {
             RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
             CallerTaskDTO callerTaskDTO = request.getCallerTaskDTO();
-            log.info("callerTaskEvent#callerTaskDTO:{}",callerTaskDTO);
+            log.info("callerTaskEvent#callerTaskDTO:{}", callerTaskDTO);
             MethodModel methodModel = DispatchCenter.get(callerTaskDTO.getUniqueKey());
             Method method = methodModel.getMethod();
             method.setAccessible(true);
@@ -67,7 +67,7 @@ public class NettyClientHelper {
             } catch (Exception e) {
                 if (Objects.isNull(result)) {
                     channel.writeAndFlush(ProtocolMsg
-                           .toEntity(ResultDTO.getErrorResult(BIZ_ERROR.getCode(), BIZ_ERROR.getMessage()), callerTaskDTO));
+                            .toEntity(ResultDTO.getErrorResult(BIZ_ERROR.getCode(), BIZ_ERROR.getMessage()), callerTaskDTO));
                 }
                 log.error("执行方法:{}|参数:{}.出现异常！", methodModel.getTarget(), callerTaskDTO.getExecutionParam(), e);
             }

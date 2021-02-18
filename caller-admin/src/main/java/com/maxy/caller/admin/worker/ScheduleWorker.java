@@ -100,15 +100,14 @@ public class ScheduleWorker implements AdminWorker {
             //悲观锁
             taskLockService.lockForUpdate();
             //查询将要执行数据
-            Date currentTime = new Date();
-            Date endDate = DateUtils.addDays(1);
-            preReadInfoList = taskDetailInfoService.getPreReadInfo(ONLINE.getCode(), currentTime, endDate);
+            Date endDate = DateUtils.addSecond(5);
+            preReadInfoList = taskDetailInfoService.getPreReadInfo(ONLINE.getCode(), endDate);
             //校验
             if (CollectionUtils.isEmpty(preReadInfoList)) {
                 dataSourceTransactionManager.commit(transaction);
                 return;
             }
-            log.info("push#预读:{}-{}.找到对应信息!!", currentTime, endDate);
+            log.info("push#预读:小于[{}]的所有任务!!", endDate);
             addCacheQueue(preReadInfoList);
             //更改状态为执行中
             taskDetailInfoService.updateStatusByIds(preReadInfoList.stream().map(TaskDetailInfoBO::getId).collect(Collectors.toList()), ONLINE.getCode(), READY.getCode());

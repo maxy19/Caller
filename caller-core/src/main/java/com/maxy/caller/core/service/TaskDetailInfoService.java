@@ -23,7 +23,7 @@ public interface TaskDetailInfoService extends CommonService {
 
     TaskDetailInfoBO getByInfoId(Long taskInfoId);
 
-    List<TaskDetailInfoBO> getPreReadInfo(Byte status, Date startTime, Date endTime);
+    List<TaskDetailInfoBO> getPreReadInfo(Byte status, Date endTime);
 
     boolean batchInsert(List<TaskDetailInfoBO> taskDetailInfoBOList);
 

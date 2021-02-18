@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * CallerSample Tester.
@@ -28,18 +29,21 @@ public class CallerOrderSampleTest {
 
     @Test
     public void testSend() throws Exception {
+        List<DelayTask> list = Lists.newArrayList();
+        DelayTask delayTask = null;
         for (int i = 0; i <10 ; i++) {
-            DelayTask delayTask = new DelayTask();
+            delayTask = new DelayTask();
             delayTask.setGroupKey("taobao");
             delayTask.setBizKey("order");
-            delayTask.setTopic("sendMsg");
-            delayTask.setExecutionTime(DateUtils.addSecond(2));
-            delayTask.setExecutionParam("你好测试成功!!");
+            delayTask.setTopic("clsExpireOrder");
+            delayTask.setExecutionTime(DateUtils.addMinutes(1));
+            delayTask.setExecutionParam("触发成功!!");
             delayTask.setTimeout(4000);
             delayTask.setRetryNum((byte) 1);
-            delayTaskService.send(Lists.newArrayList(delayTask));
+            list.add(delayTask);
             Thread.sleep(1000);
         }
+        delayTaskService.send(list);
         System.in.read();
     }
 

@@ -26,7 +26,12 @@ public class DelayTaskServiceImpl implements DelayTaskService {
     @Override
     public boolean send(List<DelayTask> delayTasks) {
         validate(delayTasks);
-        nettyClientHelper.getChannel().writeAndFlush(ProtocolMsg.toEntity(delayTasks));
+        while (true) {
+            if (nettyClientHelper.getChannel() != null) {
+                nettyClientHelper.getChannel().writeAndFlush(ProtocolMsg.toEntity(delayTasks));
+                break;
+            }
+        }
         return true;
     }
 

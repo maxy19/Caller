@@ -136,7 +136,7 @@ public class TriggerWorker implements AdminWorker {
         List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_FORMAT.join(index));
         List<String> args = Arrays.asList("10",//length
                 "-inf",
-                String.valueOf(DateUtils.addDays(currentDate, 10).getTime()),
+                String.valueOf(DateUtils.addSecond(currentDate, 30).getTime()),
                 "LIMIT", "0", adminConfigCenter.getLimitNum());
         return cacheService.getQueueData(keys, args);
     }

@@ -49,15 +49,15 @@ public class ClientExecutor implements ApplicationContextAware, SmartInitializin
     public void start() {
         //注册所有的bean
         RegisteredFlowProcessor.process(applicationContext);
-        //完善注册信息
-        checkAndReplenish(regConfigInfo);
+        //校验信息
+        validate(regConfigInfo);
         //开启netty
-        singleThreadExecutor.execute(() -> {
+         singleThreadExecutor.execute(() -> {
             nettyClient.start(regConfigInfo.getRemoteIp(), regConfigInfo.getRemotePort());
-        });
+         });
     }
 
-    private void checkAndReplenish(RegConfigInfo regConfigInfo) {
+    private void validate(RegConfigInfo regConfigInfo) {
         Preconditions.checkArgument(StringUtils.isNotBlank(regConfigInfo.getGroupKey()), "groupKey不能为空!");
         Preconditions.checkArgument(StringUtils.isNotBlank(regConfigInfo.getBizKey()), "appKey不能为空!");
         Preconditions.checkArgument(StringUtils.isNotBlank(regConfigInfo.getRemoteIp()), "remoteIp不能为空!");
