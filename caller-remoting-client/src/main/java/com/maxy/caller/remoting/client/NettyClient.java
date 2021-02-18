@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -47,7 +48,7 @@ public class NettyClient extends AbstractNettyRemoting {
         initDefaultExecutor("caller-netty-client-handle-thread_%d", nettyClientConfig.getClientWorkerThreads());
     }
 
-    public void start(String inetHost, Integer inetPort) {
+    public void start(String inetHost, Integer inetPort, CountDownLatch countDownLatch) {
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group(eventExecutors)
                 .channel(NioSocketChannel.class)
@@ -74,6 +75,7 @@ public class NettyClient extends AbstractNettyRemoting {
             cf.addListener((ChannelFutureListener) channelFuture -> {
                 if (cf.isSuccess()) {
                     log.info("Caller客户端链接服务器成功!");
+                    countDownLatch.countDown();
                 } else {
                     log.warn("Caller客户端链接服务器失败! 异常:{}", cf.cause().getMessage());
                     eventExecutors.shutdownGracefully(); //关闭线程组

@@ -14,7 +14,9 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 客户端初始化
@@ -38,7 +40,7 @@ public class ClientExecutor implements ApplicationContextAware, SmartInitializin
     private ExecutorService singleThreadExecutor = ThreadPoolConfig.getInstance().getSingleThreadExecutor(true);
     @Resource
     private RegConfigInfo regConfigInfo;
-
+    private CountDownLatch countDownLatch = new CountDownLatch(1);
 
     @Override
     public void afterSingletonsInstantiated() {
@@ -52,9 +54,14 @@ public class ClientExecutor implements ApplicationContextAware, SmartInitializin
         //校验信息
         validate(regConfigInfo);
         //开启netty
-         singleThreadExecutor.execute(() -> {
-            nettyClient.start(regConfigInfo.getRemoteIp(), regConfigInfo.getRemotePort());
-         });
+        singleThreadExecutor.execute(() -> {
+            nettyClient.start(regConfigInfo.getRemoteIp(), regConfigInfo.getRemotePort(), countDownLatch);
+        });
+        try {
+            countDownLatch.await(5, TimeUnit.SECONDS);
+        }catch (Exception e){
+            log.error("",e);
+        }
     }
 
     private void validate(RegConfigInfo regConfigInfo) {

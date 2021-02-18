@@ -67,7 +67,7 @@ public class NettyClientHelper {
             } catch (Exception e) {
                 if (Objects.isNull(result)) {
                     channel.writeAndFlush(ProtocolMsg
-                            .toEntity(ResultDTO.getErrorResult(BIZ_ERROR.getCode(), BIZ_ERROR.getMessage()), callerTaskDTO));
+                            .toEntity(ResultDTO.getErrorResult(BIZ_ERROR.getCode(), e.getMessage()), callerTaskDTO));
                 }
                 log.error("执行方法:{}|参数:{}.出现异常！", methodModel.getTarget(), callerTaskDTO.getExecutionParam(), e);
             }
