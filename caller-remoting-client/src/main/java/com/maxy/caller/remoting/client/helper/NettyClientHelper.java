@@ -39,8 +39,7 @@ public class NettyClientHelper {
 
     /**
      * 服务端客户端共有事件
-     */
-    {
+     */ {
         eventMap.put(MsgTypeEnum.MESSAGE, (protocolMsg, channel) -> {
             String msg = (String) getRequest(protocolMsg);
             log.info("客户端收到消息:{},远程地址:{}", msg, parse(channel));
@@ -63,11 +62,12 @@ public class NettyClientHelper {
             try {
                 result = method.invoke(methodModel.getTarget(), callerTaskDTO.getExecutionParam());
                 //发送出去
-                channel.writeAndFlush(ProtocolMsg.toEntity((ResultDTO) result, callerTaskDTO));
+                channel.writeAndFlush(ProtocolMsg.toEntity((ResultDTO) result, callerTaskDTO, protocolMsg.getRequestId()));
             } catch (Exception e) {
                 if (Objects.isNull(result)) {
-                    channel.writeAndFlush(ProtocolMsg
-                            .toEntity(ResultDTO.getErrorResult(BIZ_ERROR.getCode(), e.getMessage()), callerTaskDTO));
+                    channel.writeAndFlush(ProtocolMsg.toEntity(ResultDTO.getErrorResult(BIZ_ERROR.getCode(), e.getMessage()),
+                                                               callerTaskDTO,
+                                                               protocolMsg.getRequestId()));
                 }
                 log.error("执行方法:{}|参数:{}.出现异常！", methodModel.getTarget(), callerTaskDTO.getExecutionParam(), e);
             }

@@ -92,7 +92,7 @@ public class ProtocolMsg<T> {
      *
      * @return
      */
-    public static ProtocolMsg toEntity(ResultDTO resultDTO, CallerTaskDTO callerTaskDTO) {
+    public static ProtocolMsg toEntity(ResultDTO resultDTO, CallerTaskDTO callerTaskDTO, String requestId) {
         ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(MsgTypeEnum.RESULT);
         //set resultDTO
         RpcRequestDTO rpcRequestDTO = new RpcRequestDTO();
@@ -102,6 +102,8 @@ public class ProtocolMsg<T> {
         protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(rpcRequestDTO, MsgTypeEnum.RESULT));
         //set body
         protocolMsg.setBody(rpcRequestDTO);
+        //requestId
+        protocolMsg.setRequestId(requestId);
         return protocolMsg;
     }
 

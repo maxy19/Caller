@@ -31,7 +31,7 @@ public class CallerOrderSampleTest {
     public void testSend() throws Exception {
         List<DelayTask> list = Lists.newArrayList();
         DelayTask delayTask = null;
-        for (int i = 0; i <2 ; i++) {
+        for (int i = 0; i <1 ; i++) {
             delayTask = new DelayTask();
             delayTask.setGroupKey("taobao");
             delayTask.setBizKey("order");

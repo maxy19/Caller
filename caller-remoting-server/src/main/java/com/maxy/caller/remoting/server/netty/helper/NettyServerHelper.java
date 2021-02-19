@@ -9,16 +9,15 @@ import com.google.common.collect.Multimaps;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.bo.TaskRegistryBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
+import com.maxy.caller.core.common.RpcFuture;
+import com.maxy.caller.core.common.RpcHolder;
 import com.maxy.caller.core.enums.MsgTypeEnum;
-import com.maxy.caller.core.exception.BusinessException;
 import com.maxy.caller.core.netty.pojo.Pinger;
 import com.maxy.caller.core.netty.protocol.ProtocolMsg;
 import com.maxy.caller.core.service.TaskDetailInfoService;
 import com.maxy.caller.core.service.TaskGroupService;
 import com.maxy.caller.core.service.TaskLogService;
 import com.maxy.caller.core.service.TaskRegistryService;
-import com.maxy.caller.dto.CallerTaskDTO;
-import com.maxy.caller.dto.ResultDTO;
 import com.maxy.caller.dto.RpcRequestDTO;
 import com.maxy.caller.pojo.RegConfigInfo;
 import io.netty.channel.Channel;
@@ -35,9 +34,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import static com.maxy.caller.core.enums.ExceptionEnum.FOUND_NOT_EXECUTE_INFO;
-import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
-import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_SUCCEED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.ONLINE;
 import static com.maxy.caller.core.utils.CallerUtils.parse;
 
@@ -138,23 +134,8 @@ public class NettyServerHelper {
     public Supplier<NettyServerHelper> resultEvent = () -> {
         eventMap.put(MsgTypeEnum.RESULT, (protocolMsg, channel) -> {
             log.info("resultEvent#执行客户端方法返回值:{}", protocolMsg);
-            RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
-            if (Objects.isNull(request.getResultDTO())) {
-                log.error("resultEvent#ResultDTO为空!参数:{}", protocolMsg);
-                return;
-            }
-            CallerTaskDTO dto = request.getCallerTaskDTO();
-            TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(dto.getGroupKey(), dto.getBizKey(), dto.getTopic(), dto.getExecutionTime());
-            if (Objects.isNull(taskDetailInfoBO)) {
-                throw new BusinessException(FOUND_NOT_EXECUTE_INFO);
-            }
-            ResultDTO resultDTO = request.getResultDTO();
-            taskDetailInfoBO.setExecutionStatus(resultDTO.isSuccess()
-                    ? EXECUTION_SUCCEED.getCode() : EXECUTION_FAILED.getCode());
-            taskDetailInfoBO.setErrorMsg(resultDTO.getMessage());
-            taskDetailInfoService.update(taskDetailInfoBO);
-            taskDetailInfoService.removeBackup(dto);
-            taskLogService.saveClientResult(taskDetailInfoBO, resultDTO.getMessage(), parse(channel));
+            RpcFuture<ProtocolMsg> rpcFuture = RpcHolder.REQUEST_MAP.get(protocolMsg.getRequestId());
+            rpcFuture.getPromise().setSuccess(protocolMsg);
         });
         return this;
     };

@@ -103,7 +103,7 @@ public class NettyClientHandler extends ChannelDuplexHandler {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        log.error("客户端发现异常", cause);
+        log.error("客户端发现异常!!", cause);
         ctx.close();
     }
 

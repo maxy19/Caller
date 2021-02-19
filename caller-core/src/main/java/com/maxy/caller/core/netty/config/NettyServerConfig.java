@@ -20,4 +20,6 @@ public class NettyServerConfig {
     private int serverReaderIdleTime = 100;
     private boolean serverPooledByteBufAllocatorEnable = true;
     private boolean useEpollNativeSelector = false;
+    private int defaultLowWaterMark = 32 * 1024;
+    private int defaultHighWaterMark = 64 * 1024;
 }

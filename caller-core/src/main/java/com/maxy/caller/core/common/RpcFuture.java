@@ -3,6 +3,9 @@ package com.maxy.caller.core.common;
 import io.netty.util.concurrent.Promise;
 import lombok.Data;
 
+/**
+ * @author maxuyang
+ */
 @Data
 public class RpcFuture<T> {
     private Promise<T> promise;

@@ -11,6 +11,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
@@ -110,7 +111,6 @@ public class NettyServer extends AbstractNettyRemoting {
     }
 
     public Boolean start() {
-
         //初始化boos 与 selector 根据不同系统选择使用nio 还是 ePoll
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(eventLoopGroupBoss, eventLoopGroupSelector)
@@ -120,6 +120,10 @@ public class NettyServer extends AbstractNettyRemoting {
                  * 服务端将不能处理的客户端连接请求放在队列中等待处理，backlog参数指定了队列的大小。
                  */
                 .option(ChannelOption.SO_BACKLOG, 1024)
+                /**
+                 * 水位线 高于水位线则不会写入 必须等降调低水位线才会继续
+                 */
+                .option(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(nettyServerConfig.getDefaultLowWaterMark(),nettyServerConfig.getDefaultHighWaterMark()))
                 /**
                  * netty提供了IdleStateHandler来检测心跳所以下面不需要
                  */

@@ -20,6 +20,6 @@ public class NettyClientConfig {
     private int clientSocketRcvBufSize = 65535;
     private boolean clientPooledByteBufAllocatorEnable = false;
     private boolean clientCloseSocketIfTimeout = false;
-
-
+    private int defaultLowWaterMark = 32 * 1024;
+    private int defaultHighWaterMark = 64 * 1024;
 }

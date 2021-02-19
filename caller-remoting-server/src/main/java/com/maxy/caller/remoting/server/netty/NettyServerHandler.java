@@ -67,6 +67,7 @@ public class NettyServerHandler extends ChannelDuplexHandler {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         log.debug("channelActive#channel准备就绪.客户端地址:{}", ctx.channel().remoteAddress());
         super.channelActive(ctx);
+
     }
 
     @Override
@@ -95,7 +96,6 @@ public class NettyServerHandler extends ChannelDuplexHandler {
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
         log.debug("handlerRemoved#handler从channel的pipeline中移除.客户端地址:{}", ctx.channel().remoteAddress());
         super.handlerRemoved(ctx);
-        nettServerHelper.removeNotActiveAddress(ctx.channel());
     }
 
     @Override
@@ -119,5 +119,20 @@ public class NettyServerHandler extends ChannelDuplexHandler {
     public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
         log.debug("disconnect#服务端执行断开连接:{}", parse(ctx.channel().remoteAddress()));
         super.disconnect(ctx, promise);
+    }
+
+    @Override
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        super.close(ctx, promise);
+        log.debug("close#服务端执行关闭连接:{}", parse(ctx.channel().remoteAddress()));
+        nettServerHelper.removeNotActiveAddress(ctx.channel());
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        super.exceptionCaught(ctx, cause);
+        log.debug("close#服务端发现异常!!", cause);
+        ctx.close();
+        nettServerHelper.removeNotActiveAddress(ctx.channel());
     }
 }
