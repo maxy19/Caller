@@ -123,7 +123,7 @@ public class TriggerWorker implements AdminWorker {
                     continue;
                 }
                 //循环执行
-                log.info("找到数据!!,index：{} ", index);
+                log.info("找到数据!!,槽位:{}-数据:{}.", index, queueData);
                 invokeAll(queueData);
             }
         } catch (Exception e) {
@@ -178,13 +178,18 @@ public class TriggerWorker implements AdminWorker {
         }
     }
 
+    /**
+     * 加入时间轮
+     *
+     * @param list
+     */
     private void invoke(List<String> list) {
         for (String element : list) {
-            log.debug("invokeAll#开始执行：{}", element);
             CallerTaskDTO callerTaskDTO = JSONUtils.parseObject(element, CallerTaskDTO.class);
             if (checkExpireTaskInfo(callerTaskDTO)) {
                 continue;
             }
+            log.debug("invokeAll#[{}]加入了时间轮.", element);
             cacheTimer.newTimeout(timeout -> {
                 remoteClientMethod(callerTaskDTO);
             }, callerTaskDTO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
@@ -250,6 +255,12 @@ public class TriggerWorker implements AdminWorker {
         }
     }
 
+    /**
+     * 获取taskDetailInfoBo信息
+     *
+     * @param callerTaskDTO
+     * @return
+     */
     private TaskDetailInfoBO getDetailInfo(CallerTaskDTO callerTaskDTO) {
         TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(),
                 callerTaskDTO.getBizKey(),
@@ -269,7 +280,10 @@ public class TriggerWorker implements AdminWorker {
         RpcFuture<ProtocolMsg> rpcFuture = new RpcFuture(new DefaultPromise(new DefaultEventExecutor()), callerTaskDTO.getTimeout());
         ProtocolMsg request = ProtocolMsg.toEntity(callerTaskDTO);
         //request
-        send(channel, value, request);
+        Value<Boolean> result = send(channel, value, request);
+        if (result.getValue()) {
+            return result.getValue();
+        }
         //callback
         try {
             log.info("syncCallback#执行参数:{}", callerTaskDTO);
@@ -284,11 +298,13 @@ public class TriggerWorker implements AdminWorker {
 
     /**
      * 写入并发送
+     *
      * @param channel
      * @param value
      * @param request
+     * @return
      */
-    private void send(Channel channel, Value<Boolean> value, ProtocolMsg request) {
+    private Value<Boolean> send(Channel channel, Value<Boolean> value, ProtocolMsg request) {
         channel.writeAndFlush(request).addListener(future -> {
             if (future.isSuccess()) {
                 log.info("syncCallback#发送成功!!!!");
@@ -297,6 +313,7 @@ public class TriggerWorker implements AdminWorker {
                 log.error("syncCallback#发送失败,出现异常:{}", future.cause().getMessage());
             }
         });
+        return value;
     }
 
     /**

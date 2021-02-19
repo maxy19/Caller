@@ -135,7 +135,9 @@ public class NettyServerHelper {
         eventMap.put(MsgTypeEnum.RESULT, (protocolMsg, channel) -> {
             log.info("resultEvent#执行客户端方法返回值:{}", protocolMsg);
             RpcFuture<ProtocolMsg> rpcFuture = RpcHolder.REQUEST_MAP.get(protocolMsg.getRequestId());
+            Preconditions.checkArgument(rpcFuture != null, "没有找到请求者!!!");
             rpcFuture.getPromise().setSuccess(protocolMsg);
+            RpcHolder.REQUEST_MAP.remove(protocolMsg.getRequestId());
         });
         return this;
     };
@@ -149,7 +151,7 @@ public class NettyServerHelper {
             log.info("delayTaskEvent#接受客户端添加延迟任务:{}", request.getDelayTasks());
             List<TaskDetailInfoBO> taskDetailInfoBOList = BeanCopyUtils.copyListProperties(request.getDelayTasks(), TaskDetailInfoBO::new);
             taskDetailInfoService.batchInsert(taskDetailInfoBOList);
-            taskLogService.batchInsert(taskDetailInfoBOList,ONLINE.getCode(),parse(channel));
+            taskLogService.batchInsert(taskDetailInfoBOList, ONLINE.getCode(), parse(channel));
         });
         return this;
     };

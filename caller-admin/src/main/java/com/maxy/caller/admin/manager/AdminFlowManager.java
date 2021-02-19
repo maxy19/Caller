@@ -7,7 +7,6 @@ import com.maxy.caller.admin.worker.RegistryWorker;
 import com.maxy.caller.admin.worker.ScheduleWorker;
 import com.maxy.caller.admin.worker.TriggerWorker;
 import com.maxy.caller.core.config.ThreadPoolConfig;
-import com.maxy.caller.core.netty.config.NettyServerConfig;
 import com.maxy.caller.core.utils.SpringContextUtils;
 import com.maxy.caller.remoting.server.netty.NettyServer;
 import org.springframework.beans.factory.SmartInitializingSingleton;
@@ -29,8 +28,6 @@ public class AdminFlowManager implements SmartInitializingSingleton, AdminWorker
     private List<AdminWorker> workerList = new ArrayList();
     @Resource
     private NettyServer nettyServer;
-    @Resource
-    private NettyServerConfig nettyServerConfig;
 
     private ExecutorService nettyStartService = ThreadPoolConfig.getInstance().getSingleThreadExecutor(true);
 
