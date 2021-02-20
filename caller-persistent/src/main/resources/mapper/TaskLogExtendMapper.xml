@@ -107,7 +107,7 @@
                 #{taskLog.executorStatus,jdbcType=TINYINT},
                 #{taskLog.executorResultMsg,jdbcType=VARCHAR},
                 #{taskLog.alarmStatus,jdbcType=TINYINT},
-                now()
+                now(3)
             </trim>
         </foreach>
     </insert>

@@ -6,6 +6,7 @@ import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskBaseInfoBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
+import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.core.exception.BusinessException;
 import com.maxy.caller.core.service.TaskBaseInfoService;
 import com.maxy.caller.model.TaskBaseInfo;
@@ -61,8 +62,8 @@ public class TaskBaseInfoServiceImpl implements TaskBaseInfoService {
     public Boolean save(TaskBaseInfoBO taskBaseInfoBO) {
         TaskBaseInfo taskDetailInfo = new TaskBaseInfo();
         BeanCopyUtils.copy(taskBaseInfoBO, taskDetailInfo);
-        taskDetailInfo.setCreateTime(new Date());
-        taskDetailInfo.setUpdateTime(new Date());
+        taskDetailInfo.setCreateTime(DateUtils.getNowTime());
+        taskDetailInfo.setUpdateTime(DateUtils.getNowTime());
         if (taskBaseInfoMapper.insertSelective(taskDetailInfo) > 0) {
             return cacheInfo(taskBaseInfoBO);
         }
@@ -86,7 +87,7 @@ public class TaskBaseInfoServiceImpl implements TaskBaseInfoService {
         criteria.andGroupKeyEqualTo(taskBaseInfo.getGroupKey());
         criteria.andBizKeyEqualTo(taskBaseInfo.getBizKey());
         criteria.andTopicEqualTo(taskBaseInfo.getTopic());
-        taskBaseInfo.setUpdateTime(new Date());
+        taskBaseInfo.setUpdateTime(DateUtils.getNowTime());
         if (taskBaseInfoMapper.updateByExampleSelective(taskBaseInfo, taskBaseInfoExample) > 0) {
             cacheInfo(taskBaseInfoBO);
         }

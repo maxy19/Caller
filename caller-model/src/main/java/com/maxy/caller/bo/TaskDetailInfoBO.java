@@ -1,5 +1,6 @@
 package com.maxy.caller.bo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.maxy.caller.common.utils.JSONUtils;
 import lombok.Data;
 
@@ -41,6 +42,7 @@ public class TaskDetailInfoBO {
     /**
      * 执行时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS")
     private Date executionTime;
 
     /**

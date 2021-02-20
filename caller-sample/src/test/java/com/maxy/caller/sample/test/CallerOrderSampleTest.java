@@ -1,8 +1,7 @@
 package com.maxy.caller.sample.test;
 
 
-import com.google.common.collect.Lists;
-import com.maxy.caller.common.utils.DateUtils;
+import com.maxy.caller.common.utils.LocalDateUtils;
 import com.maxy.caller.core.service.DelayTaskService;
 import com.maxy.caller.pojo.DelayTask;
 import org.junit.Test;
@@ -11,6 +10,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -29,20 +31,20 @@ public class CallerOrderSampleTest {
 
     @Test
     public void testSend() throws Exception {
-        List<DelayTask> list = Lists.newArrayList();
+        List<DelayTask> list = new LinkedList<>();
         DelayTask delayTask = null;
-        for (int i = 0; i <1 ; i++) {
+        for (int i = 0; i <2 ; i++) {
             delayTask = new DelayTask();
             delayTask.setGroupKey("taobao");
             delayTask.setBizKey("order");
             delayTask.setTopic("clsExpireOrder");
-            delayTask.setExecutionTime(DateUtils.addSecond(30));
+            delayTask.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(),1,ChronoUnit.SECONDS));
             delayTask.setExecutionParam("触发成功!!");
             delayTask.setTimeout(4000);
             delayTask.setRetryNum((byte) 1);
             list.add(delayTask);
-            Thread.sleep(1000);
         }
+        System.out.println(list);
         delayTaskService.send(list);
         System.in.read();
     }

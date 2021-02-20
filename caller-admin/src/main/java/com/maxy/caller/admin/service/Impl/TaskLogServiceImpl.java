@@ -4,6 +4,7 @@ import com.maxy.caller.admin.enums.AlarmStatusEnum;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.bo.TaskLogBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
+import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.core.service.TaskLogService;
 import com.maxy.caller.model.TaskLog;
 import com.maxy.caller.persistent.example.TaskLogExample;
@@ -90,7 +91,7 @@ public class TaskLogServiceImpl implements TaskLogService {
         taskLog.setExecutorTime(taskDetailInfoBO.getExecutionTime());
         taskLog.setExecutorStatus(taskDetailInfoBO.getExecutionStatus());
         taskLog.setAlarmStatus(AlarmStatusEnum.DEFAULT.getCode());
-        taskLog.setCreateTime(new Date());
+        taskLog.setCreateTime(DateUtils.getNowTime());
         taskLog.setExecutorResultMsg(taskDetailInfoBO.getErrorMsg());
         return taskLogExtendMapper.insertSelective(taskLog) > 0;
     }
@@ -114,7 +115,7 @@ public class TaskLogServiceImpl implements TaskLogService {
         if (StringUtils.isNotBlank(message)) {
             taskLog.setExecutorResultMsg(message);
         }
-        taskLog.setCreateTime(new Date());
+        taskLog.setCreateTime(DateUtils.getNowTime());
         taskLog.setAlarmStatus(AlarmStatusEnum.DEFAULT.getCode());
         taskLog.setExecutorResultMsg(taskDetailInfoBO.getErrorMsg());
         return taskLogExtendMapper.insert(taskLog) > 0;
@@ -131,7 +132,7 @@ public class TaskLogServiceImpl implements TaskLogService {
                 .andBizKeyEqualTo(taskLog.getBizKey())
                 .andTopicEqualTo(taskLog.getTopic());
         taskLog.setAlarmStatus(targetStatus);
-        taskLog.setCreateTime(new Date());
+        taskLog.setCreateTime(DateUtils.getNowTime());
         return taskLogExtendMapper.updateByExample(taskLog, example) > 0;
     }
 

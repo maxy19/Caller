@@ -11,7 +11,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +38,7 @@ public class LogCleanWorker implements AdminWorker {
             try {
                 List<TaskGroupBO> listByLogRetentionDay = taskGroupService.getListByLogRetentionDay((short) 0);
                 listByLogRetentionDay.forEach(taskGroupBO -> {
-                    taskLogService.deleteBySpecifiedTime(DateUtils.addDays(new Date(), -taskGroupBO.getLogRetentionDays()));
+                    taskLogService.deleteBySpecifiedTime(DateUtils.addDays(DateUtils.getNowTime(), -taskGroupBO.getLogRetentionDays()));
                 });
             } catch (Exception e) {
                 log.error("清理日志定时出现异常！!", e);

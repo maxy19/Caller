@@ -2,12 +2,14 @@ package com.maxy.caller.common.utils;
 
 import lombok.extern.log4j.Log4j2;
 
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -21,6 +23,7 @@ public class DateUtils {
 
     private static final String DATE_FORMAT = "yyyy-MM-dd";
     private static final String DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+    private static final String DATETIME_FORMAT_MILLI = "yyyy-MM-dd HH:mm:ss.SSS";
 
     private static final ThreadLocal<Map<String, DateFormat>> dateFormatThreadLocal = new ThreadLocal<Map<String, DateFormat>>();
 
@@ -90,15 +93,16 @@ public class DateUtils {
         return parse(dateString, DATE_FORMAT);
     }
 
+
     /**
-     * parse datetime string, like "yyyy-MM-dd HH:mm:ss"
+     * parse datetime string, like "yyyy-MM-dd HH:mm:ss.SSS"
      *
      * @param dateString
      * @return
      * @throws ParseException
      */
     public static Date parseDateTime(String dateString) {
-        return parse(dateString, DATETIME_FORMAT);
+        return parse(dateString, DATETIME_FORMAT_MILLI);
     }
 
     /**
@@ -174,6 +178,12 @@ public class DateUtils {
         c.setTime(date);
         c.add(calendarField, amount);
         return c.getTime();
+    }
+
+    public static Date getNowTime() {
+        return Timestamp.valueOf(
+                new SimpleDateFormat(DATETIME_FORMAT_MILLI, Locale.CHINESE).format(new Date())
+        );
     }
 
 }

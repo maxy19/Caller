@@ -7,6 +7,7 @@ import com.maxy.caller.pojo.DelayTask;
 import com.maxy.caller.remoting.client.helper.NettyClientHelper;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -37,6 +38,8 @@ public class DelayTaskServiceImpl implements DelayTaskService {
             Preconditions.checkArgument(StringUtils.isNotBlank(delayTask.getTopic()), "topic不能为空!");
             Preconditions.checkArgument(Objects.nonNull(delayTask.getExecutionTime()), "执行时间不能为空!");
             delayTask.setTimeout(Optional.ofNullable(delayTask.getTimeout()).orElse(3000));
+            delayTask.setExecutionParam(Optional.ofNullable(delayTask.getExecutionParam()).orElse(Strings.EMPTY));
+            delayTask.setRetryNum(Optional.ofNullable(delayTask.getRetryNum()).orElse((byte) 0));
         });
     }
 }

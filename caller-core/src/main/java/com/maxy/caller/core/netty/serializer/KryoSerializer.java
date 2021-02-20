@@ -14,9 +14,9 @@ import java.io.ByteArrayOutputStream;
  */
 @Log4j2
 public class KryoSerializer {
- 
+
     private static final ThreadLocalKryoFactory factory = new ThreadLocalKryoFactory();
-    
+
     public static ByteBuf serialize(Object object, ByteBuf out) {
         Kryo kryo = factory.getKryo();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -29,11 +29,11 @@ public class KryoSerializer {
             baos.flush();
             baos.close();
         } catch (Exception e) {
-            log.error("serialize出现异常!!",e);
+            log.error("serialize出现异常!!", e);
         }
         return out.writeBytes(b);
     }
-    
+
     public static Object deserialize(ByteBuf out) {
         if (out == null) {
             return null;
@@ -42,5 +42,5 @@ public class KryoSerializer {
         Kryo kryo = factory.getKryo();
         return kryo.readClassAndObject(input);
     }
-    
+
 }

@@ -1,7 +1,5 @@
 package com.maxy.caller.core.utils;
 
-import com.maxy.caller.common.utils.IpUtils;
-import com.maxy.caller.common.utils.MD5EncryptUtil;
 import io.netty.channel.Channel;
 import lombok.extern.log4j.Log4j2;
 
@@ -56,7 +54,7 @@ public class CallerUtils {
     }
 
     public static String getReqId() {
-        return MD5EncryptUtil.encrypt(System.nanoTime() + IpUtils.getIp());
+        return String.valueOf(System.nanoTime());
     }
 
     public static String getLocalAddress() {

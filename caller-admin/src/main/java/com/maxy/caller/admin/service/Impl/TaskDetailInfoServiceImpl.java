@@ -62,8 +62,8 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     public Boolean save(TaskDetailInfoBO taskDetailInfoBO) {
         TaskDetailInfo taskDetailInfo = new TaskDetailInfo();
         BeanCopyUtils.copy(taskDetailInfoBO, taskDetailInfo);
-        taskDetailInfo.setCreateTime(new Date());
-        taskDetailInfo.setUpdateTime(new Date());
+        taskDetailInfo.setCreateTime(DateUtils.getNowTime());
+        taskDetailInfo.setUpdateTime(DateUtils.getNowTime());
         return taskDetailInfoExtendMapper.insertSelective(taskDetailInfo) > 0;
     }
 
@@ -76,7 +76,7 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
         criteria.andGroupKeyEqualTo(taskDetailInfoBO.getGroupKey());
         criteria.andBizKeyEqualTo(taskDetailInfoBO.getGroupKey());
         criteria.andTopicEqualTo(taskDetailInfoBO.getTopic());
-        taskDetailInfo.setUpdateTime(new Date());
+        taskDetailInfo.setUpdateTime(DateUtils.getNowTime());
         if (taskDetailInfo.getId() != null) {
             return taskDetailInfoExtendMapper.updateByPrimaryKeySelective(taskDetailInfo) > 0;
         }

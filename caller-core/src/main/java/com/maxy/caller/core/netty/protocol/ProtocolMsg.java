@@ -29,7 +29,7 @@ import static com.maxy.caller.core.utils.CallerUtils.getReqId;
 public class ProtocolMsg<T> {
 
     private ProtocolHeader protocolHeader;
-    private String requestId = getReqId();
+    private String requestId;
     private MsgTypeEnum msgTypeEnum;
     private T body;
 
@@ -54,6 +54,8 @@ public class ProtocolMsg<T> {
         protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(rpcRequestDTO, MsgTypeEnum.REGISTRY));
         //set body
         protocolMsg.setBody(rpcRequestDTO);
+        //reqId
+        protocolMsg.setRequestId(getReqId());
         return protocolMsg;
     }
 
@@ -69,6 +71,8 @@ public class ProtocolMsg<T> {
         protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(body, MsgTypeEnum.MESSAGE));
         //set body
         protocolMsg.setBody(body);
+        //reqId
+        protocolMsg.setRequestId(getReqId());
         return protocolMsg;
     }
 
@@ -84,6 +88,8 @@ public class ProtocolMsg<T> {
         protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(pinger, MsgTypeEnum.PINGER));
         //set body
         protocolMsg.setBody(pinger);
+        //reqId
+        protocolMsg.setRequestId(getReqId());
         return protocolMsg;
     }
 
@@ -102,7 +108,7 @@ public class ProtocolMsg<T> {
         protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(rpcRequestDTO, MsgTypeEnum.RESULT));
         //set body
         protocolMsg.setBody(rpcRequestDTO);
-        //requestId
+        //reqId
         protocolMsg.setRequestId(requestId);
         return protocolMsg;
     }
@@ -121,6 +127,8 @@ public class ProtocolMsg<T> {
         protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(rpcRequestDTO, MsgTypeEnum.EXECUTE));
         //set body
         protocolMsg.setBody(rpcRequestDTO);
+        //reqId
+        protocolMsg.setRequestId(getReqId());
         return protocolMsg;
     }
 
@@ -138,6 +146,8 @@ public class ProtocolMsg<T> {
         protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(rpcRequestDTO, MsgTypeEnum.DELAYTASK));
         //set body
         protocolMsg.setBody(rpcRequestDTO);
+        //reqId
+        protocolMsg.setRequestId(getReqId());
         return protocolMsg;
     }
 

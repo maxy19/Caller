@@ -10,7 +10,6 @@ import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.common.utils.JSONUtils;
 import com.maxy.caller.core.common.RpcFuture;
-import com.maxy.caller.core.common.RpcHolder;
 import com.maxy.caller.core.config.ThreadPoolConfig;
 import com.maxy.caller.core.config.ThreadPoolRegisterCenter;
 import com.maxy.caller.core.exception.BusinessException;
@@ -45,6 +44,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
 import static com.maxy.caller.admin.enums.RouterStrategyEnum.router;
+import static com.maxy.caller.core.common.RpcHolder.REQUEST_MAP;
 import static com.maxy.caller.core.enums.ExceptionEnum.FOUND_NOT_EXECUTE_INFO;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_SUCCEED;
@@ -114,10 +114,9 @@ public class TriggerWorker implements AdminWorker {
 
     private void pop() {
         try {
-            int size = cacheService.getNodeMap().size();
             //获取索引列表
-            Date currentDate = new Date();
-            for (int index = 0, length = size / 2; index < length; index++) {
+            Date currentDate = DateUtils.getNowTime();
+            for (int index = 0, length = cacheService.getNodeMap().size() / 2; index < length; index++) {
                 List<Object> queueData = getQueueData(currentDate, index);
                 if (CollectionUtils.isEmpty(queueData)) {
                     continue;
@@ -189,7 +188,7 @@ public class TriggerWorker implements AdminWorker {
             if (checkExpireTaskInfo(callerTaskDTO)) {
                 continue;
             }
-            log.debug("invokeAll#[{}]加入了时间轮.", element);
+            log.debug("invoke#[{}]放入定时轮.", element);
             cacheTimer.newTimeout(timeout -> {
                 remoteClientMethod(callerTaskDTO);
             }, callerTaskDTO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
@@ -287,11 +286,11 @@ public class TriggerWorker implements AdminWorker {
         //callback
         try {
             log.info("syncCallback#执行参数:{}", callerTaskDTO);
-            RpcHolder.REQUEST_MAP.put(request.getRequestId(), rpcFuture);
-            handleCallback.accept(rpcFuture.getPromise().get(rpcFuture.getTimeout(), TimeUnit.SECONDS), channel);
+            REQUEST_MAP.put(request.getRequestId(), rpcFuture);
+            handleCallback.accept(rpcFuture.getPromise().get(rpcFuture.getTimeout(), TimeUnit.MILLISECONDS), channel);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             value.setValue(true);
-            log.error("调用方法超时或者遇到异常！参数：{}", callerTaskDTO, e);
+            log.error("syncCallback#调用方法超时或者遇到异常！参数:{}", callerTaskDTO, e);
         }
         return value.getValue();
     }
@@ -307,10 +306,10 @@ public class TriggerWorker implements AdminWorker {
     private Value<Boolean> send(Channel channel, Value<Boolean> value, ProtocolMsg request) {
         channel.writeAndFlush(request).addListener(future -> {
             if (future.isSuccess()) {
-                log.info("syncCallback#发送成功!!!!");
+                log.info("send#发送成功!!!!");
             } else {
                 value.setValue(true);
-                log.error("syncCallback#发送失败,出现异常:{}", future.cause().getMessage());
+                log.error("send#发送失败,出现异常:{}", future.cause().getMessage());
             }
         });
         return value;
@@ -339,31 +338,6 @@ public class TriggerWorker implements AdminWorker {
         Object request = protocolMsg.getBody();
         Preconditions.checkArgument(Objects.nonNull(request));
         return request;
-    }
-
-    /**
-     * 异步发送
-     *
-     * @param callerTaskDTO
-     * @param channel
-     * @return
-     */
-    private boolean asyncSend(CallerTaskDTO callerTaskDTO, Channel channel) {
-        Value<Boolean> value = new Value<>(false);
-        try {
-            channel.writeAndFlush(ProtocolMsg.toEntity(callerTaskDTO)).addListener(future -> {
-                if (future.isSuccess()) {
-                    log.info("asyncSend#发送成功!!!!");
-                } else {
-                    log.error("asyncSend#发送失败,出现异常:{}", future.cause().getMessage());
-                }
-                future.get(callerTaskDTO.getTimeout(), TimeUnit.MILLISECONDS);
-            });
-        } catch (Exception e) {
-            value.setValue(true);
-            log.error("asyncSend#调用方法超时或者遇到异常!参数:{}", callerTaskDTO, e);
-        }
-        return value.getValue();
     }
 
     @Override

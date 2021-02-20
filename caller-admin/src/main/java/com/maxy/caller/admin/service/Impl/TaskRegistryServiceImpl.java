@@ -2,6 +2,7 @@ package com.maxy.caller.admin.service.Impl;
 
 import com.maxy.caller.bo.TaskRegistryBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
+import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.core.service.TaskRegistryService;
 import com.maxy.caller.model.TaskRegistry;
 import com.maxy.caller.persistent.example.TaskRegistryExample;
@@ -10,7 +11,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -45,7 +45,7 @@ public class TaskRegistryServiceImpl implements TaskRegistryService {
     public boolean save(TaskRegistryBO taskRegistryBO) {
         TaskRegistry registry = new TaskRegistry();
         BeanUtils.copyProperties(taskRegistryBO, registry);
-        registry.setCreateTime(new Date());
+        registry.setCreateTime(DateUtils.getNowTime());
         return taskRegistryMapper.insert(registry) > 0;
     }
 

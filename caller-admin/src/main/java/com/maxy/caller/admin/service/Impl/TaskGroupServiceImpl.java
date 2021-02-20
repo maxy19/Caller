@@ -5,6 +5,7 @@ import com.github.pagehelper.PageInfo;
 import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskGroupBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
+import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.core.service.TaskGroupService;
 import com.maxy.caller.model.TaskGroup;
 import com.maxy.caller.persistent.example.TaskGroupExample;
@@ -46,7 +47,7 @@ public class TaskGroupServiceImpl implements TaskGroupService {
     public Boolean save(TaskGroupBO taskGroupBO) {
         TaskGroup taskGroup = new TaskGroup();
         BeanCopyUtils.copy(taskGroupBO, taskGroup);
-        Date date = new Date();
+        Date date = DateUtils.getNowTime();
         taskGroup.setCreateTime(date);
         taskGroup.setUpdateTime(date);
         return taskGroupMapper.insertSelective(taskGroup) > 0;
@@ -56,7 +57,7 @@ public class TaskGroupServiceImpl implements TaskGroupService {
     public Boolean update(TaskGroupBO taskGroupBO) {
         TaskGroup taskGroup = new TaskGroup();
         BeanCopyUtils.copy(taskGroupBO, taskGroup);
-        taskGroup.setUpdateTime(new Date());
+        taskGroup.setUpdateTime(DateUtils.getNowTime());
         TaskGroupExample example = new TaskGroupExample();
         example.createCriteria().andGroupKeyEqualTo(taskGroupBO.getGroupKey()).andBizKeyEqualTo(taskGroupBO.getBizKey());
         return taskGroupMapper.updateByExampleSelective(taskGroup, example) > 0;
@@ -114,7 +115,7 @@ public class TaskGroupServiceImpl implements TaskGroupService {
         TaskGroup taskGroup = new TaskGroup();
         BeanUtils.copyProperties(taskGroupBO, taskGroup);
         taskGroup.setStatus(targetStatus);
-        taskGroup.setUpdateTime(new Date());
+        taskGroup.setUpdateTime(DateUtils.getNowTime());
         if (taskGroupMapper.updateByExampleSelective(taskGroup, example) > 0) {
             return taskGroupBO;
         }

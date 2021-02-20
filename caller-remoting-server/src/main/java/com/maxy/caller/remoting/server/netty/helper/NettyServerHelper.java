@@ -10,7 +10,6 @@ import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.bo.TaskRegistryBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
 import com.maxy.caller.core.common.RpcFuture;
-import com.maxy.caller.core.common.RpcHolder;
 import com.maxy.caller.core.enums.MsgTypeEnum;
 import com.maxy.caller.core.netty.pojo.Pinger;
 import com.maxy.caller.core.netty.protocol.ProtocolMsg;
@@ -34,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import static com.maxy.caller.core.common.RpcHolder.REQUEST_MAP;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.ONLINE;
 import static com.maxy.caller.core.utils.CallerUtils.parse;
 
@@ -134,10 +134,10 @@ public class NettyServerHelper {
     public Supplier<NettyServerHelper> resultEvent = () -> {
         eventMap.put(MsgTypeEnum.RESULT, (protocolMsg, channel) -> {
             log.info("resultEvent#执行客户端方法返回值:{}", protocolMsg);
-            RpcFuture<ProtocolMsg> rpcFuture = RpcHolder.REQUEST_MAP.get(protocolMsg.getRequestId());
-            Preconditions.checkArgument(rpcFuture != null, "没有找到请求者!!!");
+            RpcFuture<ProtocolMsg> rpcFuture = REQUEST_MAP.get(protocolMsg.getRequestId());
+            Preconditions.checkArgument(rpcFuture != null, "通过reqId没有找到对应的future信息..");
             rpcFuture.getPromise().setSuccess(protocolMsg);
-            RpcHolder.REQUEST_MAP.remove(protocolMsg.getRequestId());
+            REQUEST_MAP.remove(protocolMsg.getRequestId());
         });
         return this;
     };

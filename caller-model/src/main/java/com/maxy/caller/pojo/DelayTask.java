@@ -1,5 +1,6 @@
 package com.maxy.caller.pojo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.maxy.caller.common.utils.JSONUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,6 +32,7 @@ public class DelayTask {
     /**
      * 执行时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS")
     private Date executionTime;
     /**
      * 执行参数

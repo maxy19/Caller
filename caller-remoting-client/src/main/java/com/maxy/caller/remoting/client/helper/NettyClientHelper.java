@@ -69,7 +69,7 @@ public class NettyClientHelper {
                                                                callerTaskDTO,
                                                                protocolMsg.getRequestId()));
                 }
-                log.error("执行方法:{}|参数:{}.出现异常！", methodModel.getTarget(), callerTaskDTO.getExecutionParam(), e);
+                log.error("执行方法:{}|参数:{}.出现异常!", methodModel.getTarget(), callerTaskDTO.getExecutionParam(), e);
             }
             return this;
         });
