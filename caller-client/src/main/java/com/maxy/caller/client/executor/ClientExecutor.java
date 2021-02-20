@@ -56,20 +56,18 @@ public class ClientExecutor implements ApplicationContextAware, SmartInitializin
         CountDownLatch countDownLatch = new CountDownLatch(1);
         //开启netty
         singleThreadExecutor.execute(() -> {
-            nettyClient.start(regConfigInfo.getRemoteIp(), regConfigInfo.getRemotePort(), countDownLatch);
+            nettyClient.start(regConfigInfo.getAddressInfos(), countDownLatch);
         });
         try {
             countDownLatch.await(5, TimeUnit.SECONDS);
-        }catch (InterruptedException e){
-            log.error("netty客户端启动失败!!",e);
+        } catch (InterruptedException e) {
+            log.error("netty客户端启动失败!!", e);
         }
     }
 
     private void validate(RegConfigInfo regConfigInfo) {
         Preconditions.checkArgument(StringUtils.isNotBlank(regConfigInfo.getGroupKey()), "groupKey不能为空!");
         Preconditions.checkArgument(StringUtils.isNotBlank(regConfigInfo.getBizKey()), "appKey不能为空!");
-        Preconditions.checkArgument(StringUtils.isNotBlank(regConfigInfo.getRemoteIp()), "remoteIp不能为空!");
-        Preconditions.checkArgument(regConfigInfo.getRemotePort() != null, "remotePort不能为空!");
     }
 
     @Override
