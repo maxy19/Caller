@@ -101,14 +101,14 @@ public class ScheduleWorker implements AdminWorker {
             //悲观锁
             taskLockService.lockForUpdate();
             //查询将要执行数据
-            Date endDate = DateUtils.addSecond(5);
+            Date endDate = DateUtils.addSecond(60);
             preReadInfoList = taskDetailInfoService.getPreReadInfo(ONLINE.getCode(), endDate);
             //校验
             if (CollectionUtils.isEmpty(preReadInfoList)) {
                 dataSourceTransactionManager.commit(transaction);
                 return;
             }
-            log.info("push#预读:小于[{}]的所有任务!!", endDate);
+            log.info("push#预读:小于[{}]的所有任务,数据量为:{}", endDate, preReadInfoList.size());
             addCacheQueue(preReadInfoList);
             //更改状态为执行中
             taskDetailInfoService.updateStatusByIds(preReadInfoList.stream().map(TaskDetailInfoBO::getId).collect(Collectors.toList()), ONLINE.getCode(), READY.getCode());
@@ -152,6 +152,7 @@ public class ScheduleWorker implements AdminWorker {
             String uniqueId = getUniqueName(taskDetailInfoBO);
             CallerTaskDTO dto = new CallerTaskDTO();
             BeanUtils.copyProperties(taskDetailInfoBO, dto);
+            dto.setDetailTaskId(taskDetailInfoBO.getId());
             long time = taskDetailInfoBO.getExecutionTime().getTime();
             //消除bigKey则将队列通过{node-1}分片 打散映射
             long slot = getSlot(time, size / 2);

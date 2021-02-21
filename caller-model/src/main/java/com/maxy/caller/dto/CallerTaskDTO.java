@@ -14,7 +14,10 @@ import java.util.Date;
  */
 @Data
 public class CallerTaskDTO {
-
+    /**
+     * 详情id
+     */
+    private Long detailTaskId;
     /**
      * 任务组ID
      */

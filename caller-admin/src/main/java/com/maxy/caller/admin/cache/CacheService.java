@@ -61,9 +61,9 @@ public class CacheService {
                 "    local key = redis.call('RPOP', KEYS[1])\n" +
                 "    if (key) then\n" +
                 "        local values = redis.call('ZRANGEBYSCORE', key, ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6])\n" +
-                "        if (#values > 0) then\n" +
+                "        if (#values >= 1) then\n" +
                 "            for j, v in ipairs(values) do\n" +
-                "                local backupValue = redis.call('LPUSH', backupQueue, v);\n" +
+                "                local backupValue = redis.call('LPUSH', backupQueue, v)\n" +
                 "                redis.call('ZREM', key, v)\n" +
                 "            end\n" +
                 "            result[i] = values\n" +

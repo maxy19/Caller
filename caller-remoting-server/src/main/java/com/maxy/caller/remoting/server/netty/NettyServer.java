@@ -152,7 +152,7 @@ public class NettyServer extends AbstractNettyRemoting {
                     protected void initChannel(Channel ch) throws Exception {
                         //心跳检测
                         ch.pipeline()
-                                .addLast(defaultEventExecutorGroup, new IdleStateHandler(0, 0, 30, TimeUnit.SECONDS))
+                                .addLast(defaultEventExecutorGroup, new IdleStateHandler(0, 0, 120, TimeUnit.SECONDS))
                                 //加码
                                 .addLast(defaultEventExecutorGroup, "encoder", new KryoEncode())
                                 //解码

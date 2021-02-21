@@ -68,6 +68,10 @@
             <groupId>com.maxy.caller</groupId>
             <artifactId>caller-model</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.eatthepath</groupId>
+            <artifactId>fast-uuid</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

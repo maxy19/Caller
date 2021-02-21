@@ -150,6 +150,11 @@
                 <version>${swagger2.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.eatthepath</groupId>
+                <artifactId>fast-uuid</artifactId>
+                <version>0.1</version>
+            </dependency>
+            <dependency>
                 <groupId>com.esotericsoftware</groupId>
                 <artifactId>kryo</artifactId>
                 <version>5.0.3</version>

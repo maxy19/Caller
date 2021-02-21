@@ -66,7 +66,7 @@ public class NettyClient extends AbstractNettyRemoting {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline()
-                                .addLast(defaultEventExecutorGroup, new IdleStateHandler(0, 0, 30, TimeUnit.SECONDS))
+                                .addLast(defaultEventExecutorGroup, new IdleStateHandler(0, 0, 120, TimeUnit.SECONDS))
                                 //加码
                                 .addLast(defaultEventExecutorGroup, "encoder", new KryoEncode())
                                 //解码

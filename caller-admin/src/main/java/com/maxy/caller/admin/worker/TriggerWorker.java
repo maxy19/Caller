@@ -29,6 +29,7 @@ import io.netty.util.concurrent.DefaultPromise;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -122,7 +123,7 @@ public class TriggerWorker implements AdminWorker {
                     continue;
                 }
                 //循环执行
-                log.info("找到数据!!,槽位:{}-数据:{}.", index, queueData);
+                log.info("找到数据!!,槽位:{}", index);
                 invokeAll(queueData);
             }
         } catch (Exception e) {
@@ -139,9 +140,9 @@ public class TriggerWorker implements AdminWorker {
      */
     private List<Object> getQueueData(Date currentDate, int index) {
         List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_FORMAT.join(index));
-        List<String> args = Arrays.asList("10",//length
+        List<String> args = Arrays.asList("100",//length
                 "-inf",
-                String.valueOf(DateUtils.addSecond(currentDate, 30).getTime()),
+                String.valueOf(DateUtils.addSecond(currentDate, 120).getTime()),
                 "LIMIT", "0", adminConfigCenter.getLimitNum());
         return cacheService.getQueueData(keys, args);
     }
@@ -149,16 +150,16 @@ public class TriggerWorker implements AdminWorker {
     /**
      * 检查过期任务
      *
-     * @param callerTaskDTO
+     * @param context
      * @return
      */
-    private boolean checkExpireTaskInfo(CallerTaskDTO callerTaskDTO) {
-        if (callerTaskDTO.getExecutionTime().getTime() <= System.currentTimeMillis()) {
-            log.info("checkExpireTaskInfo#[{}]任务,时间:[{}]已过期将丢弃.", callerTaskDTO.getUniqueKey(), callerTaskDTO.getExecutionTime());
-            TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(), callerTaskDTO.getBizKey(), callerTaskDTO.getTopic(), callerTaskDTO.getExecutionTime());
+    private boolean checkExpireTaskInfo(Pair<TaskDetailInfoBO, CallerTaskDTO> context) {
+        TaskDetailInfoBO taskDetailInfoBO = context.getLeft();
+        if (taskDetailInfoBO.getExecutionTime().getTime() <= System.currentTimeMillis()) {
+            log.warn("checkExpireTaskInfo#[{}]任务,时间:[{}]已过期将丢弃.", getUniqueName(taskDetailInfoBO), taskDetailInfoBO.getExecutionTime());
             taskDetailInfoBO.setExecutionStatus(EXPIRED.getCode());
             taskDetailInfoService.update(taskDetailInfoBO);
-            taskDetailInfoService.removeBackup(callerTaskDTO);
+            taskDetailInfoService.removeBackup(context.getRight());
             taskLogService.save(taskDetailInfoBO);
             return true;
         }
@@ -173,6 +174,7 @@ public class TriggerWorker implements AdminWorker {
     private void invokeAll(List<Object> queueData) {
         for (int i = 0, length = queueData.size(); i < length; i++) {
             List<String> list = (List<String>) queueData.get(i);
+            log.info("当前槽位数据量:{}", list.size());
             invoke(list);
         }
     }
@@ -185,12 +187,14 @@ public class TriggerWorker implements AdminWorker {
     private void invoke(List<String> list) {
         for (String element : list) {
             CallerTaskDTO callerTaskDTO = JSONUtils.parseObject(element, CallerTaskDTO.class);
-            if (checkExpireTaskInfo(callerTaskDTO)) {
+            TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.getByInfoId(callerTaskDTO.getDetailTaskId());
+            Pair<TaskDetailInfoBO, CallerTaskDTO> context = Pair.of(taskDetailInfoBO, callerTaskDTO);
+            if (checkExpireTaskInfo(context)) {
                 continue;
             }
-            log.debug("invoke#[{}]放入定时轮.", element);
+            log.info("invoke#[{}]放入定时轮.", element);
             cacheTimer.newTimeout(timeout -> {
-                remoteClientMethod(callerTaskDTO);
+                remoteClientMethod(context);
             }, callerTaskDTO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
         }
     }
@@ -199,73 +203,63 @@ public class TriggerWorker implements AdminWorker {
     /**
      * 通过netty调用远程方法
      *
-     * @param callerTaskDTO
+     * @param context
      */
-    private void remoteClientMethod(CallerTaskDTO callerTaskDTO) {
+    private void remoteClientMethod(Pair<TaskDetailInfoBO, CallerTaskDTO> context) {
         //netty call client
         executorSchedule.execute(() -> {
-            List<Channel> channels = nettyServerHelper.getActiveChannel().get(getGroupName(callerTaskDTO));
+            List<Channel> channels = nettyServerHelper.getActiveChannel().get(getGroupName(context.getLeft()));
             if (CollectionUtils.isEmpty(channels)) {
-                log.warn("没有找打可以连接的通道!!!!.");
+                log.error("没有找打可以连接的通道!!!!.");
                 return;
             }
-            //调用远程触发客户端
-            Channel channel = nettyServerHelper.getChannelByAddr(router(taskBaseInfoService.getRouterStrategy(callerTaskDTO.getGroupKey(),
-                    callerTaskDTO.getBizKey(),
-                    callerTaskDTO.getTopic()),
-                    parse(channels)));
+            //获取channel
+            Channel channel = getChannel(context.getRight(), channels);
             //执行并监听结果
-            boolean result = syncCallback(callerTaskDTO, channel);
+            boolean result = syncCallback(context.getRight(), channel);
             //发现异常如果需要重试将再次调用方法
             if (result) {
-                if (callerTaskDTO.getRetryNum() > 0) {
-                    retryExecute(callerTaskDTO, channel);
+                if (context.getLeft().getRetryNum() > 0) {
+                    retryExecute(context, channel);
                 } else {
-                    TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(), callerTaskDTO.getBizKey(),
-                            callerTaskDTO.getTopic(), callerTaskDTO.getExecutionTime());
-                    taskDetailInfoBO.fillStatusAndErrorMsg("执行远程方法异常!", EXECUTION_FAILED.getCode());
-                    taskDetailInfoService.update(taskDetailInfoBO);
-                    taskDetailInfoService.removeBackup(callerTaskDTO);
-                    taskLogService.save(taskDetailInfoBO, parse(channel), (byte) 0);
+                    context.getLeft().fillStatusAndErrorMsg("执行远程方法异常!", EXECUTION_FAILED.getCode());
+                    taskDetailInfoService.update(context.getLeft());
+                    taskDetailInfoService.removeBackup(context.getRight());
+                    taskLogService.save(context.getLeft(), parse(channel), (byte) 0);
                 }
             }
         });
     }
 
     /**
-     * 重试
+     * 获取channel
      *
      * @param callerTaskDTO
-     * @param channel
+     * @param channels
+     * @return
      */
-    private void retryExecute(CallerTaskDTO callerTaskDTO, Channel channel) {
-        TaskDetailInfoBO taskDetailInfoBO = getDetailInfo(callerTaskDTO);
-        for (byte retryNum = 0, totalNum = callerTaskDTO.getRetryNum(); retryNum < totalNum; retryNum++) {
-            boolean result = syncCallback(callerTaskDTO, channel);
-            if (result) {
-                taskDetailInfoBO.setExecutionStatus(RETRYING.getCode());
-                taskDetailInfoBO.setRetryNum(retryNum);
-                Boolean updateResult = taskDetailInfoService.update(taskDetailInfoBO);
-                taskDetailInfoService.removeBackup(callerTaskDTO);
-                log.info("retryExecute#更新重试中状态结果：{}", updateResult);
-                taskLogService.save(taskDetailInfoBO, parse(channel), retryNum);
-                return;
-            }
-        }
+    private Channel getChannel(CallerTaskDTO callerTaskDTO, List<Channel> channels) {
+        return nettyServerHelper.getChannelByAddr(
+                router(taskBaseInfoService.getRouterStrategy(callerTaskDTO.getGroupKey(),
+                        callerTaskDTO.getBizKey(),
+                        callerTaskDTO.getTopic()),
+                        parse(channels)));
     }
 
     /**
-     * 获取taskDetailInfoBo信息
-     *
-     * @param callerTaskDTO
-     * @return
+     * 重试
      */
-    private TaskDetailInfoBO getDetailInfo(CallerTaskDTO callerTaskDTO) {
-        TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(callerTaskDTO.getGroupKey(),
-                callerTaskDTO.getBizKey(),
-                callerTaskDTO.getTopic(),
-                callerTaskDTO.getExecutionTime());
-        return taskDetailInfoBO;
+    private void retryExecute(Pair<TaskDetailInfoBO, CallerTaskDTO> context, Channel channel) {
+        for (byte retryNum = 0, totalNum = context.getRight().getRetryNum(); retryNum < totalNum; retryNum++) {
+            boolean result = syncCallback(context.getRight(), channel);
+            if (result) {
+                context.getLeft().setExecutionStatus(RETRYING.getCode());
+                taskDetailInfoService.update(context.getLeft());
+                taskDetailInfoService.removeBackup(context.getRight());
+                taskLogService.save(context.getLeft(), parse(channel), retryNum);
+                return;
+            }
+        }
     }
 
 
@@ -306,7 +300,7 @@ public class TriggerWorker implements AdminWorker {
     private Value<Boolean> send(Channel channel, Value<Boolean> value, ProtocolMsg request) {
         channel.writeAndFlush(request).addListener(future -> {
             if (future.isSuccess()) {
-                log.info("send#发送成功!!!!");
+                log.info("send#[{}]发送成功!!!!", request.getRequestId());
             } else {
                 value.setValue(true);
                 log.error("send#发送失败,出现异常:{}", future.cause().getMessage());
@@ -321,7 +315,7 @@ public class TriggerWorker implements AdminWorker {
     private BiConsumer<ProtocolMsg, Channel> handleCallback = ((response, channel) -> {
         RpcRequestDTO request = (RpcRequestDTO) getRequest(response);
         CallerTaskDTO dto = request.getCallerTaskDTO();
-        TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.get(dto.getGroupKey(), dto.getBizKey(), dto.getTopic(), dto.getExecutionTime());
+        TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.getByInfoId(dto.getDetailTaskId());
         if (Objects.isNull(taskDetailInfoBO)) {
             throw new BusinessException(FOUND_NOT_EXECUTE_INFO);
         }

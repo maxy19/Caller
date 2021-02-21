@@ -18,7 +18,6 @@ import com.maxy.caller.persistent.mapper.TaskDetailInfoExtendMapper;
 import com.maxy.caller.persistent.mapper.TaskGroupMapper;
 import com.maxy.caller.pojo.Pagination;
 import org.apache.commons.collections.CollectionUtils;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -77,10 +76,7 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
         criteria.andBizKeyEqualTo(taskDetailInfoBO.getGroupKey());
         criteria.andTopicEqualTo(taskDetailInfoBO.getTopic());
         taskDetailInfo.setUpdateTime(DateUtils.getNowTime());
-        if (taskDetailInfo.getId() != null) {
-            return taskDetailInfoExtendMapper.updateByPrimaryKeySelective(taskDetailInfo) > 0;
-        }
-        return taskDetailInfoExtendMapper.updateByExampleSelective(taskDetailInfo, taskDetailInfoExample) > 0;
+        return taskDetailInfoExtendMapper.updateByPrimaryKeySelective(taskDetailInfo) > 0;
     }
 
     @Override
@@ -95,23 +91,6 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
         BeanCopyUtils.copy(taskDetailInfo, taskInfoItemBO);
         return taskInfoItemBO;
     }
-
-    public List<TaskDetailInfoBO> getTaskDetailInfoBOList(Date currentTime, Byte executionStatus, int addSecond, int minusSecond) {
-        TaskDetailInfoExample example = new TaskDetailInfoExample();
-        example.createCriteria().andExecutionTimeBetween(DateUtils.addSecond(currentTime, minusSecond), DateUtils.addSecond(currentTime, addSecond));
-        example.createCriteria().andExecutionStatusEqualTo(executionStatus);
-        List<TaskDetailInfo> taskDetailInfos = taskDetailInfoExtendMapper.selectByExample(example);
-        return BeanCopyUtils.copyListProperties(taskDetailInfos, TaskDetailInfoBO::new);
-    }
-
-    public List<TaskDetailInfoBO> getTaskDetailInfoBOList(Date currentTime, Byte executionStatus, int addSecond) {
-        TaskDetailInfoExample example = new TaskDetailInfoExample();
-        example.createCriteria().andExecutionTimeBetween(currentTime, DateUtils.addSecond(currentTime, addSecond));
-        example.createCriteria().andExecutionStatusEqualTo(executionStatus);
-        List<TaskDetailInfo> taskDetailInfos = taskDetailInfoExtendMapper.selectByExample(example);
-        return BeanCopyUtils.copyListProperties(taskDetailInfos, TaskDetailInfoBO::new);
-    }
-
     @Override
     public List<TaskDetailInfoBO> getPreReadInfo(Byte status, Date endTime) {
         TaskDetailInfoExample example = new TaskDetailInfoExample();
@@ -137,20 +116,6 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
         example.createCriteria().andGroupKeyEqualTo(groupKey).andBizKeyEqualTo(bizKey).andTopicEqualTo(topic);
         example.setOrderByClause("execution_time asc");
         return BeanCopyUtils.copyListProperties(taskDetailInfoExtendMapper.selectByExample(example), TaskDetailInfoBO::new);
-    }
-
-    @Override
-    public TaskDetailInfoBO get(String groupKey, String bizKey, String topic, Date executionTime) {
-        TaskDetailInfoExample example = new TaskDetailInfoExample();
-        example.createCriteria().andGroupKeyEqualTo(groupKey).andBizKeyEqualTo(bizKey)
-                .andTopicEqualTo(topic).andExecutionTimeEqualTo(executionTime);
-        List<TaskDetailInfo> taskDetailInfoList = taskDetailInfoExtendMapper.selectByExample(example);
-        if (CollectionUtils.isNotEmpty(taskDetailInfoList)) {
-            TaskDetailInfoBO taskDetailInfoBO = new TaskDetailInfoBO();
-            BeanUtils.copyProperties(taskDetailInfoList.get(0), taskDetailInfoBO);
-            return taskDetailInfoBO;
-        }
-        return null;
     }
 
     @Override

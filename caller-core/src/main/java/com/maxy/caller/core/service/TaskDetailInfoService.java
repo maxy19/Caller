@@ -31,7 +31,5 @@ public interface TaskDetailInfoService extends CommonService {
 
     List<TaskDetailInfoBO> getTaskDetailList(String groupKey, String bizKey, String topic);
 
-    TaskDetailInfoBO get(String groupKey, String bizKey, String topic, Date executionTime);
-
     void removeBackup(CallerTaskDTO callerTaskDTO);
 }

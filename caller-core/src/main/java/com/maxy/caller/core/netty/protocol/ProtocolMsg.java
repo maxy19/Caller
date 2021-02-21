@@ -12,10 +12,9 @@ import com.maxy.caller.pojo.RegConfigInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import org.apache.logging.log4j.core.util.UuidUtil;
 
 import java.util.List;
-
-import static com.maxy.caller.core.utils.CallerUtils.getReqId;
 
 
 /**
@@ -55,7 +54,7 @@ public class ProtocolMsg<T> {
         //set body
         protocolMsg.setBody(rpcRequestDTO);
         //reqId
-        protocolMsg.setRequestId(getReqId());
+        protocolMsg.setRequestId(UuidUtil.getTimeBasedUuid().toString());
         return protocolMsg;
     }
 
@@ -72,7 +71,7 @@ public class ProtocolMsg<T> {
         //set body
         protocolMsg.setBody(body);
         //reqId
-        protocolMsg.setRequestId(getReqId());
+        protocolMsg.setRequestId(UuidUtil.getTimeBasedUuid().toString());
         return protocolMsg;
     }
 
@@ -89,7 +88,7 @@ public class ProtocolMsg<T> {
         //set body
         protocolMsg.setBody(pinger);
         //reqId
-        protocolMsg.setRequestId(getReqId());
+        protocolMsg.setRequestId(UuidUtil.getTimeBasedUuid().toString());
         return protocolMsg;
     }
 
@@ -128,7 +127,7 @@ public class ProtocolMsg<T> {
         //set body
         protocolMsg.setBody(rpcRequestDTO);
         //reqId
-        protocolMsg.setRequestId(getReqId());
+        protocolMsg.setRequestId(UuidUtil.getTimeBasedUuid().toString());
         return protocolMsg;
     }
 
@@ -147,7 +146,7 @@ public class ProtocolMsg<T> {
         //set body
         protocolMsg.setBody(rpcRequestDTO);
         //reqId
-        protocolMsg.setRequestId(getReqId());
+        protocolMsg.setRequestId(UuidUtil.getTimeBasedUuid().toString());
         return protocolMsg;
     }
 

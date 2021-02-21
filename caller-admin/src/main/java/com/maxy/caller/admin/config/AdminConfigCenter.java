@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Data
 public class AdminConfigCenter {
 
-    @Value("${caller.admin.limit.num:1000}")
+    @Value("${caller.admin.limit.num:2000}")
     private String limitNum;
 
     @Value("${caller.admin.limit.num:1000}")
