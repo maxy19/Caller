@@ -187,7 +187,7 @@ public class TriggerWorker implements AdminWorker {
             if (checkExpireTaskInfo(context)) {
                 continue;
             }
-            log.info("invoke#[{}]放入定时轮.", element);
+            log.info("invoke#[{}]放入定时轮.", callerTaskDTO.getDetailTaskId());
             cacheTimer.newTimeout(timeout -> {
                 remoteClientMethod(context);
             }, callerTaskDTO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
