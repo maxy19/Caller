@@ -129,9 +129,9 @@ public class ScheduleWorker implements AdminWorker {
 
     private void addCacheQueue(List<TaskDetailInfoBO> preReadInfoList) {
         Map<String, JedisPool> nodeMap = cacheService.getNodeMap();
-        log.info("addCacheQueue#nodeMap:{}", nodeMap);
-        addIndexQueue(preReadInfoList, nodeMap.size());
+        //先放zSet,再放index.防止消费者提前拿到index时候生产者还没有放完数据,导致数据没有取完.
         addZSetQueue(preReadInfoList, nodeMap.size());
+        addIndexQueue(preReadInfoList, nodeMap.size());
     }
 
     private void addIndexQueue(List<TaskDetailInfoBO> preReadInfoList, int size) {
@@ -142,8 +142,8 @@ public class ScheduleWorker implements AdminWorker {
             if (!indexDataSet.contains(indexDataFormat)) {
                 indexDataSet.add(indexDataFormat);
                 //加入查询出来的数据并去重 同一个uniquKey{?}只需要一个就行,如果不去重则会对同一个uniqu{?} 查询多次
-                cacheService.lpush(DICTIONARY_INDEX_FORMAT.join(slot), indexDataFormat);
             }
+            cacheService.lpush(DICTIONARY_INDEX_FORMAT.join(slot), indexDataFormat);
         });
     }
 

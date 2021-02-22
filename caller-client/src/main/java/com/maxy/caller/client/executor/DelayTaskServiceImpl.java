@@ -5,6 +5,7 @@ import com.maxy.caller.core.netty.protocol.ProtocolMsg;
 import com.maxy.caller.core.service.DelayTaskService;
 import com.maxy.caller.pojo.DelayTask;
 import com.maxy.caller.remoting.client.helper.NettyClientHelper;
+import io.netty.channel.Channel;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
@@ -27,7 +28,9 @@ public class DelayTaskServiceImpl implements DelayTaskService {
     @Override
     public boolean send(List<DelayTask> delayTasks) {
         validate(delayTasks);
-        nettyClientHelper.getChannel().writeAndFlush(ProtocolMsg.toEntity(delayTasks));
+        Channel channel = nettyClientHelper.getChannel();
+        channel.writeAndFlush(ProtocolMsg.toEntity(delayTasks));
+        log.info("delayTask任务发送:{}!!", channel);
         return true;
     }
 

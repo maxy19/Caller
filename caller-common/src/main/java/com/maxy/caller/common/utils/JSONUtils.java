@@ -53,6 +53,15 @@ public class JSONUtils {
         return toJSONString(obj, objectMapper);
     }
 
+    public static byte[] writeValueAsBytes(Object obj) {
+        try {
+            return objectMapper.writeValueAsBytes(obj);
+        } catch (Exception e) {
+            log.error("writeValueAsBytes#发现异常!!!", e);
+        }
+        return new byte[]{};
+    }
+
     public static String toJSONString(Object obj, ObjectMapper objectMapper) {
         if (obj == null) {
             return null;

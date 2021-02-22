@@ -23,22 +23,24 @@ import java.util.List;
 public class TaskDetailInfoTest {
     @Resource
     private TaskDetailInfoService taskDetailInfoService;
+
     @SneakyThrows
     @Test
     public void test() {
         List<TaskDetailInfoBO> list = new ArrayList<>();
-        for (int i = 0; i <1000 ; i++) {
+        for (int i = 0; i < 1500; i++) {
             TaskDetailInfoBO taskDetailInfoBO = new TaskDetailInfoBO();
             taskDetailInfoBO.setGroupKey("taobao");
             taskDetailInfoBO.setBizKey("order");
             taskDetailInfoBO.setTopic("clsExpireOrder");
             taskDetailInfoBO.setExecutionParam("test1");
-            taskDetailInfoBO.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(),60, ChronoUnit.SECONDS));
+            taskDetailInfoBO.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 30, ChronoUnit.SECONDS));
             taskDetailInfoBO.setExecutionStatus((byte) 1);
             taskDetailInfoBO.setTimeout(4000);
-            taskDetailInfoBO.setRetryNum((byte)0);
+            taskDetailInfoBO.setRetryNum((byte) 0);
             list.add(taskDetailInfoBO);
         }
         taskDetailInfoService.batchInsert(list);
+        System.in.read();
     }
 }

@@ -12,7 +12,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -31,9 +31,9 @@ public class CallerOrderSampleTest {
 
     @Test
     public void testSend() throws Exception {
-        List<DelayTask> list = new LinkedList<>();
+        List<DelayTask> list = new ArrayList<>();
         DelayTask delayTask = null;
-        for (int i = 0; i <10 ; i++) {
+        for (int i = 0; i <1; i++) {
             delayTask = new DelayTask();
             delayTask.setGroupKey("taobao");
             delayTask.setBizKey("order");
@@ -48,6 +48,4 @@ public class CallerOrderSampleTest {
         delayTaskService.send(list);
         System.in.read();
     }
-
-
-} 
+}

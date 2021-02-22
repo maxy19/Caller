@@ -1,4 +1,4 @@
-package com.maxy.caller.core.netty.serializer;
+package com.maxy.caller.core.netty.serializer.kryo;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
@@ -20,7 +20,7 @@ public class KryoSerializer {
     public static ByteBuf serialize(Object object, ByteBuf out) {
         Kryo kryo = factory.getKryo();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        Output output = new Output(baos, 16777216);
+        Output output = new Output(baos);
         kryo.writeClassAndObject(output, object);
         output.flush();
         output.close();
@@ -38,7 +38,7 @@ public class KryoSerializer {
         if (in == null) {
             return null;
         }
-        Input input = new Input(new ByteBufInputStream(in), 16777216);
+        Input input = new Input(new ByteBufInputStream(in));
         Kryo kryo = factory.getKryo();
         return kryo.readClassAndObject(input);
     }

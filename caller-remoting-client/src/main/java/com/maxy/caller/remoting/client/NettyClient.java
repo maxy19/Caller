@@ -1,9 +1,9 @@
 package com.maxy.caller.remoting.client;
 
 import com.maxy.caller.core.netty.AbstractNettyRemoting;
-import com.maxy.caller.core.netty.KryoDecode;
-import com.maxy.caller.core.netty.KryoEncode;
 import com.maxy.caller.core.netty.config.NettyClientConfig;
+import com.maxy.caller.core.netty.serializer.kryo.KryoDecode;
+import com.maxy.caller.core.netty.serializer.kryo.KryoEncode;
 import com.maxy.caller.pojo.RegConfigInfo;
 import com.maxy.caller.pojo.Value;
 import io.netty.bootstrap.Bootstrap;
@@ -66,7 +66,7 @@ public class NettyClient extends AbstractNettyRemoting {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline()
-                                .addLast(defaultEventExecutorGroup, new IdleStateHandler(0, 0, 120, TimeUnit.SECONDS))
+                                .addLast(defaultEventExecutorGroup, new IdleStateHandler(0, 0, nettyClientConfig.getClientChannelMaxIdleTimeSeconds(), TimeUnit.SECONDS))
                                 //加码
                                 .addLast(defaultEventExecutorGroup, "encoder", new KryoEncode())
                                 //解码
@@ -79,7 +79,7 @@ public class NettyClient extends AbstractNettyRemoting {
             this.bootstrap = bootstrap;
             for (RegConfigInfo.AddressInfo addressInfo : addressInfos) {
                 boolean isConnected = connection(countDownLatch, bootstrap, addressInfo);
-                if(isConnected){
+                if (isConnected) {
                     break;
                 }
             }

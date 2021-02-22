@@ -1,6 +1,5 @@
 package com.maxy.caller.admin.service.Impl;
 
-import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.bo.QueryConditionBO;
@@ -41,8 +40,6 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
 
     @Override
     public PageInfo<TaskDetailInfoBO> list(QueryConditionBO queryConditionBO) {
-        Pagination pagination = queryConditionBO.getPagination();
-        PageHelper.startPage(pagination.getPageNum(), pagination.getPageSize());
         TaskGroupExample example = new TaskGroupExample();
         example.createCriteria().andGroupKeyEqualTo(queryConditionBO.getGroupKey())
                 .andBizKeyEqualTo(queryConditionBO.getBizKey());
@@ -52,6 +49,8 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
             TaskDetailInfoExample taskDetailInfoExample = new TaskDetailInfoExample();
             taskDetailInfoExample.createCriteria().andIdEqualTo(taskGroup.getId());
             List<TaskDetailInfo> taskDetailInfos = taskDetailInfoExtendMapper.selectByExample(taskDetailInfoExample);
+            Pagination pagination = queryConditionBO.getPagination();
+            taskDetailInfoExample.setOrderByClause(" limit " + pagination.getPageNum() + " , " + pagination.getPageSize());
             return new PageInfo(BeanCopyUtils.copyListProperties(taskDetailInfos, TaskDetailInfoBO::new));
         }
         return new PageInfo<>();
@@ -95,7 +94,8 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     public List<TaskDetailInfoBO> getPreReadInfo(Byte status, Date endTime) {
         TaskDetailInfoExample example = new TaskDetailInfoExample();
         example.createCriteria().andExecutionStatusEqualTo(status)
-                .andExecutionTimeLessThanOrEqualTo(endTime);
+                                .andExecutionTimeLessThanOrEqualTo(endTime);
+        example.setOrderByClause("execution_time asc limit 0,500");
         List<TaskDetailInfo> taskDetailInfos = taskDetailInfoExtendMapper.selectByExample(example);
         return BeanCopyUtils.copyListProperties(taskDetailInfos, TaskDetailInfoBO::new);
     }

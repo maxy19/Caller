@@ -2,9 +2,9 @@ package com.maxy.caller.remoting.server.netty;
 
 import com.maxy.caller.common.utils.RemotingUtil;
 import com.maxy.caller.core.netty.AbstractNettyRemoting;
-import com.maxy.caller.core.netty.KryoDecode;
-import com.maxy.caller.core.netty.KryoEncode;
 import com.maxy.caller.core.netty.config.NettyServerConfig;
+import com.maxy.caller.core.netty.serializer.kryo.KryoDecode;
+import com.maxy.caller.core.netty.serializer.kryo.KryoEncode;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -61,9 +61,8 @@ public class NettyServer extends AbstractNettyRemoting {
             initNIO();
         }
         //多线程处理handle
-        initDefaultExecutor("caller-netty-server-handle-thread_%d",nettyServerConfig.getServerWorkerThreads());
+        initDefaultExecutor("caller-netty-server-handle-thread_%d", nettyServerConfig.getServerWorkerThreads());
     }
-
 
 
     /**
@@ -72,6 +71,7 @@ public class NettyServer extends AbstractNettyRemoting {
     private void initNIO() {
         this.eventLoopGroupBoss = new NioEventLoopGroup(1, new ThreadFactory() {
             private AtomicInteger threadIndex = new AtomicInteger(0);
+
             @Override
             public Thread newThread(Runnable r) {
                 return new Thread(r, String.format("caller-netty-nio-boss_%d", this.threadIndex.incrementAndGet()));
@@ -81,6 +81,7 @@ public class NettyServer extends AbstractNettyRemoting {
         this.eventLoopGroupSelector = new NioEventLoopGroup(nettyServerConfig.getServerSelectorThreads(), new ThreadFactory() {
             private AtomicInteger threadIndex = new AtomicInteger(0);
             private int threadTotal = nettyServerConfig.getServerSelectorThreads();
+
             @Override
             public Thread newThread(Runnable r) {
                 return new Thread(r, String.format("caller-netty-server-nio-selector_%d_%d", threadTotal, this.threadIndex.incrementAndGet()));
@@ -94,6 +95,7 @@ public class NettyServer extends AbstractNettyRemoting {
     private void initEpoll() {
         this.eventLoopGroupBoss = new EpollEventLoopGroup(1, new ThreadFactory() {
             private AtomicInteger threadIndex = new AtomicInteger(0);
+
             @Override
             public Thread newThread(Runnable r) {
                 return new Thread(r, String.format("caller-netty-epoll-boss_%d", this.threadIndex.incrementAndGet()));
@@ -103,6 +105,7 @@ public class NettyServer extends AbstractNettyRemoting {
         this.eventLoopGroupSelector = new EpollEventLoopGroup(nettyServerConfig.getServerSelectorThreads(), new ThreadFactory() {
             private AtomicInteger threadIndex = new AtomicInteger(0);
             private int threadTotal = nettyServerConfig.getServerSelectorThreads();
+
             @Override
             public Thread newThread(Runnable r) {
                 return new Thread(r, String.format("caller-netty-server-epoll-selector_%d_%d", threadTotal, this.threadIndex.incrementAndGet()));
@@ -123,7 +126,7 @@ public class NettyServer extends AbstractNettyRemoting {
                 /**
                  * 水位线 高于水位线则不会写入 必须等降调低水位线才会继续
                  */
-                .option(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(nettyServerConfig.getDefaultLowWaterMark(),nettyServerConfig.getDefaultHighWaterMark()))
+                .option(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(nettyServerConfig.getDefaultLowWaterMark(), nettyServerConfig.getDefaultHighWaterMark()))
                 /**
                  * netty提供了IdleStateHandler来检测心跳所以下面不需要
                  */
@@ -152,7 +155,7 @@ public class NettyServer extends AbstractNettyRemoting {
                     protected void initChannel(Channel ch) throws Exception {
                         //心跳检测
                         ch.pipeline()
-                                .addLast(defaultEventExecutorGroup, new IdleStateHandler(0, 0, 120, TimeUnit.SECONDS))
+                                .addLast(defaultEventExecutorGroup, new IdleStateHandler(0, 0, nettyServerConfig.getServerChannelMaxIdleTimeSeconds(), TimeUnit.SECONDS))
                                 //加码
                                 .addLast(defaultEventExecutorGroup, "encoder", new KryoEncode())
                                 //解码

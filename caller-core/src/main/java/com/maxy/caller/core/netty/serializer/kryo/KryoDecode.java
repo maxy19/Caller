@@ -1,6 +1,5 @@
-package com.maxy.caller.core.netty;
+package com.maxy.caller.core.netty.serializer.kryo;
 
-import com.maxy.caller.core.netty.serializer.KryoSerializer;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -14,7 +13,7 @@ import lombok.extern.log4j.Log4j2;
 public class KryoDecode extends LengthFieldBasedFrameDecoder {
 
     public KryoDecode() {
-        this(10485760);
+        this(1048576);
     }
 
     public KryoDecode(int maxObjectSize) {

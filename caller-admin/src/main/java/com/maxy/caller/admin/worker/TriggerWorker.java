@@ -7,7 +7,6 @@ import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.admin.config.AdminConfigCenter;
 import com.maxy.caller.admin.service.AdminWorker;
 import com.maxy.caller.bo.TaskDetailInfoBO;
-import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.common.utils.JSONUtils;
 import com.maxy.caller.core.common.RpcFuture;
 import com.maxy.caller.core.config.ThreadPoolConfig;
@@ -35,7 +34,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -116,9 +114,8 @@ public class TriggerWorker implements AdminWorker {
     private void pop() {
         try {
             //获取索引列表
-            Date currentDate = DateUtils.getNowTime();
             for (int index = 0, length = cacheService.getNodeMap().size() / 2; index < length; index++) {
-                List<Object> queueData = getQueueData(currentDate, index);
+                List<Object> queueData = getQueueData(index);
                 if (CollectionUtils.isEmpty(queueData)) {
                     continue;
                 }
@@ -134,15 +131,13 @@ public class TriggerWorker implements AdminWorker {
     /**
      * lua执行redis获取数据
      *
-     * @param currentDate
      * @param index
      * @return
      */
-    private List<Object> getQueueData(Date currentDate, int index) {
+    private List<Object> getQueueData(int index) {
         List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_FORMAT.join(index));
         List<String> args = Arrays.asList("100",//length
-                "-inf",
-                String.valueOf(DateUtils.addSecond(currentDate, 120).getTime()),
+                "-inf", "+inf",
                 "LIMIT", "0", adminConfigCenter.getLimitNum());
         return cacheService.getQueueData(keys, args);
     }

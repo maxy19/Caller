@@ -18,8 +18,4 @@ public interface AdminWorker extends CommonService {
      */
     void stop();
 
-
-
-
-
 }

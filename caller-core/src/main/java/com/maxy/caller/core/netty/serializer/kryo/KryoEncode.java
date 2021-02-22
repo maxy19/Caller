@@ -1,13 +1,14 @@
-package com.maxy.caller.core.netty;
+package com.maxy.caller.core.netty.serializer.kryo;
 
-import com.maxy.caller.core.netty.serializer.KryoSerializer;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
+import lombok.extern.log4j.Log4j2;
 
 /**
  * @author maxy
  */
+@Log4j2
 public class KryoEncode extends MessageToByteEncoder {
 
     @Override
