@@ -127,7 +127,7 @@ public class NettyServerHandler extends ChannelDuplexHandler {
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
         super.close(ctx, promise);
         log.debug("close#服务端执行关闭连接:{}", parse(ctx.channel().remoteAddress()));
-        nettServerHelper.removeNotActiveAddress(ctx.channel());
+        nettServerHelper.getIpChannelMapping().remove(parse(ctx.channel()));
     }
 
     @Override
@@ -135,6 +135,6 @@ public class NettyServerHandler extends ChannelDuplexHandler {
         super.exceptionCaught(ctx, cause);
         log.debug("close#服务端发现异常!!", cause);
         ctx.close();
-        nettServerHelper.removeNotActiveAddress(ctx.channel());
+        nettServerHelper.getIpChannelMapping().remove(parse(ctx.channel()));
     }
 }

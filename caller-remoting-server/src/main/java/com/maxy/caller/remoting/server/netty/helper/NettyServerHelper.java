@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimaps;
 import com.maxy.caller.bo.TaskDetailInfoBO;
@@ -110,23 +111,22 @@ public class NettyServerHelper {
             channel.writeAndFlush(ProtocolMsg.toEntity("服务端收到客户端的心跳消息!"));
             List<Channel> channels = activeChannel.get(pinger.getUniqueName());
             //去掉不活跃的
+            List<Channel> collection = Lists.newArrayList();
             channels.removeIf(element -> {
                 if (!element.isActive()) {
-                    removeNotActiveAddress(element);
+                    collection.add(element);
+                    ipChannelMapping.remove(parse(channel));
                     List<String> keys = Splitter.on(":").splitToList(pinger.getUniqueName());
                     taskRegistryService.deleteByNotActive(keys.get(0), keys.get(1), parse(channel.remoteAddress()));
                     return true;
                 }
                 return false;
             });
+            activeChannel.values().removeAll(collection);
         });
         return this;
     };
 
-    public void removeNotActiveAddress(Channel channel) {
-        activeChannel.values().remove(channel);
-        ipChannelMapping.remove(parse(channel));
-    }
 
     /**
      * 服务端解析客户端事件
