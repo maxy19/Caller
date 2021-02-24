@@ -210,6 +210,8 @@ public class TriggerWorker implements AdminWorker {
             }
             //获取channel
             Channel channel = getChannel(context.getRight(), channels);
+            //校验
+            Preconditions.checkArgument(channel != null);
             //执行并监听结果
             boolean result = syncCallback(context.getRight(), channel);
             //发现异常如果需要重试将再次调用方法

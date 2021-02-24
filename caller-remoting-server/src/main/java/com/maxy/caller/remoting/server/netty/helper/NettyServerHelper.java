@@ -112,10 +112,10 @@ public class NettyServerHelper {
             List<Channel> channels = activeChannel.get(pinger.getUniqueName());
             //去掉不活跃的
             List<Channel> collection = Lists.newArrayList();
-            channels.removeIf(element -> {
-                if (!element.isActive()) {
-                    collection.add(element);
-                    ipChannelMapping.remove(parse(channel));
+            channels.removeIf(socketChannel -> {
+                if (!socketChannel.isActive()) {
+                    collection.add(socketChannel);
+                    ipChannelMapping.remove(parse(socketChannel));
                     List<String> keys = Splitter.on(":").splitToList(pinger.getUniqueName());
                     taskRegistryService.deleteByNotActive(keys.get(0), keys.get(1), parse(channel.remoteAddress()));
                     return true;

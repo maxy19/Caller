@@ -38,9 +38,17 @@ public class KryoSerializer {
         if (in == null) {
             return null;
         }
-        Input input = new Input(new ByteBufInputStream(in));
-        Kryo kryo = factory.getKryo();
-        return kryo.readClassAndObject(input);
+        Input input = null;
+        try {
+            input = new Input(new ByteBufInputStream(in));
+            Kryo kryo = factory.getKryo();
+            return kryo.readClassAndObject(input);
+        } finally {
+            if (input != null) {
+                input.close();
+            }
+        }
+
     }
 
 }
