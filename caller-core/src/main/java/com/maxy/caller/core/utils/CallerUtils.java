@@ -38,6 +38,13 @@ public class CallerUtils {
         return "";
     }
 
+    public static boolean isChannelWritable(Channel channel) {
+        if (channel != null && channel.isActive()) {
+            return channel.isWritable();
+        }
+        return false;
+    }
+
     public static List<String> parse(final List<Channel> channels) {
         return channels.stream().map(CallerUtils::parse).collect(Collectors.toList());
     }

@@ -16,8 +16,8 @@ public class NettyClientConfig {
     private int connectTimeoutMillis = 3000;
     private long channelNotActiveInterval = 1000 * 60;
     private int clientChannelMaxIdleTimeSeconds = 120;
-    private int clientSocketSndBufSize = 65535;
-    private int clientSocketRcvBufSize = 65535;
+    private int clientSocketSndBufSize = 1024 * 1024;
+    private int clientSocketRcvBufSize = 1024 * 1024;
     private boolean clientPooledByteBufAllocatorEnable = false;
     private boolean clientCloseSocketIfTimeout = false;
     private int defaultLowWaterMark = 32 * 1024;

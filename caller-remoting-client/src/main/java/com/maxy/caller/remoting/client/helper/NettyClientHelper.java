@@ -1,6 +1,7 @@
 package com.maxy.caller.remoting.client.helper;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Stopwatch;
 import com.maxy.caller.core.config.DispatchCenter;
 import com.maxy.caller.core.enums.MsgTypeEnum;
 import com.maxy.caller.core.netty.protocol.ProtocolMsg;
@@ -17,6 +18,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
@@ -52,6 +54,7 @@ public class NettyClientHelper {
      */
     public Supplier<NettyClientHelper> callerTaskEvent = () -> {
         eventMap.put(MsgTypeEnum.EXECUTE, (protocolMsg, channel) -> {
+            Stopwatch stopwatch = Stopwatch.createStarted();
             RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
             CallerTaskDTO callerTaskDTO = request.getCallerTaskDTO();
             log.info("callerTaskEvent#callerTaskDTO:{}", callerTaskDTO);
@@ -71,6 +74,7 @@ public class NettyClientHelper {
                 }
                 log.error("执行方法:{}|参数:{}.出现异常!", methodModel.getTarget(), callerTaskDTO.getExecutionParam(), e);
             }
+            log.info("callerTaskEvent:任务ID:{},耗时:{}", protocolMsg.getRequestId(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
             return this;
         });
         return this;

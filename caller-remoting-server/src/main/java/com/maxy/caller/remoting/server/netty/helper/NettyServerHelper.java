@@ -2,6 +2,7 @@ package com.maxy.caller.remoting.server.netty.helper;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -116,6 +118,7 @@ public class NettyServerHelper {
                 if (!socketChannel.isActive()) {
                     collection.add(socketChannel);
                     ipChannelMapping.remove(parse(socketChannel));
+                    log.warn("IP:[{}]被移除!!!", parse(socketChannel));
                     List<String> keys = Splitter.on(":").splitToList(pinger.getUniqueName());
                     taskRegistryService.deleteByNotActive(keys.get(0), keys.get(1), parse(channel.remoteAddress()));
                     return true;
@@ -133,11 +136,13 @@ public class NettyServerHelper {
      */
     public Supplier<NettyServerHelper> resultEvent = () -> {
         eventMap.put(MsgTypeEnum.RESULT, (protocolMsg, channel) -> {
+            Stopwatch stopwatch = Stopwatch.createStarted();
             log.info("resultEvent#执行客户端方法返回值:{}", protocolMsg);
             RpcFuture<ProtocolMsg> rpcFuture = REQUEST_MAP.get(protocolMsg.getRequestId());
             Preconditions.checkArgument(rpcFuture != null, "通过reqId没有找到对应的future信息..");
             rpcFuture.getPromise().setSuccess(protocolMsg);
             REQUEST_MAP.remove(protocolMsg.getRequestId());
+            log.info("resultEvent:耗时:reqId:{},{}", protocolMsg.getRequestId(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
         });
         return this;
     };

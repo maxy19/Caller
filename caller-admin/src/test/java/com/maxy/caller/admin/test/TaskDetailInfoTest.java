@@ -28,16 +28,16 @@ public class TaskDetailInfoTest {
     @Test
     public void test() {
         List<TaskDetailInfoBO> list = new ArrayList<>();
-        for (int i = 0; i < 1500; i++) {
+        for (int i = 0; i < 150; i++) {
             TaskDetailInfoBO taskDetailInfoBO = new TaskDetailInfoBO();
             taskDetailInfoBO.setGroupKey("taobao");
             taskDetailInfoBO.setBizKey("order");
             taskDetailInfoBO.setTopic("clsExpireOrder");
             taskDetailInfoBO.setExecutionParam("test1");
-            taskDetailInfoBO.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 30, ChronoUnit.SECONDS));
+            taskDetailInfoBO.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 10, ChronoUnit.SECONDS));
             taskDetailInfoBO.setExecutionStatus((byte) 1);
             taskDetailInfoBO.setTimeout(4000);
-            taskDetailInfoBO.setRetryNum((byte) 0);
+            taskDetailInfoBO.setRetryNum((byte) 3);
             list.add(taskDetailInfoBO);
         }
         taskDetailInfoService.batchInsert(list);

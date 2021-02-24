@@ -1,6 +1,7 @@
 package com.maxy.caller.admin.worker;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.maxy.caller.admin.cache.CacheService;
@@ -17,6 +18,7 @@ import com.maxy.caller.core.service.TaskBaseInfoService;
 import com.maxy.caller.core.service.TaskDetailInfoService;
 import com.maxy.caller.core.service.TaskLogService;
 import com.maxy.caller.core.timer.CacheTimer;
+import com.maxy.caller.core.utils.CallerUtils;
 import com.maxy.caller.dto.CallerTaskDTO;
 import com.maxy.caller.dto.ResultDTO;
 import com.maxy.caller.dto.RpcRequestDTO;
@@ -187,7 +189,7 @@ public class TriggerWorker implements AdminWorker {
             if (checkExpireTaskInfo(context)) {
                 continue;
             }
-            log.info("invoke#[{}]放入定时轮.", callerTaskDTO.getDetailTaskId());
+            log.debug("invoke#[{}]放入定时轮.", callerTaskDTO.getDetailTaskId());
             cacheTimer.newTimeout(timeout -> {
                 remoteClientMethod(context);
             }, callerTaskDTO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
@@ -205,14 +207,16 @@ public class TriggerWorker implements AdminWorker {
         executorSchedule.execute(() -> {
             List<Channel> channels = nettyServerHelper.getActiveChannel().get(getGroupName(context.getLeft()));
             if (CollectionUtils.isEmpty(channels)) {
-                log.error("没有找打可以连接的通道!!!!.");
+                log.error("remoteClientMethod#没有找到可以连接的通道!!!!.");
                 return;
             }
             //获取channel
             Channel channel = getChannel(context.getRight(), channels);
-            //校验
-            Preconditions.checkArgument(channel != null);
-            //执行并监听结果
+            //是否可写入
+            if (!CallerUtils.isChannelWritable(channel)) {
+                log.warn("remoteClientMethod#channel:{}", channel);
+                return;
+            }
             boolean result = syncCallback(context.getRight(), channel);
             //发现异常如果需要重试将再次调用方法
             if (result) {
@@ -276,9 +280,10 @@ public class TriggerWorker implements AdminWorker {
         }
         //callback
         try {
-            log.info("syncCallback#执行参数:{}", callerTaskDTO);
             REQUEST_MAP.put(request.getRequestId(), rpcFuture);
+            Stopwatch stopwatch = Stopwatch.createStarted();
             handleCallback.accept(rpcFuture.getPromise().get(rpcFuture.getTimeout(), TimeUnit.MILLISECONDS), channel);
+            log.info("syncCallback:任务ID:{},耗时:{}", callerTaskDTO.getDetailTaskId(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             value.setValue(true);
             log.error("syncCallback#调用方法超时或者遇到异常！参数:{}", callerTaskDTO, e);
@@ -317,8 +322,7 @@ public class TriggerWorker implements AdminWorker {
             throw new BusinessException(FOUND_NOT_EXECUTE_INFO);
         }
         ResultDTO resultDTO = request.getResultDTO();
-        taskDetailInfoBO.setExecutionStatus(resultDTO.isSuccess()
-                ? EXECUTION_SUCCEED.getCode() : EXECUTION_FAILED.getCode());
+        taskDetailInfoBO.setExecutionStatus(resultDTO.isSuccess() ? EXECUTION_SUCCEED.getCode() : EXECUTION_FAILED.getCode());
         taskDetailInfoBO.setErrorMsg(resultDTO.getMessage());
         taskDetailInfoService.update(taskDetailInfoBO);
         taskDetailInfoService.removeBackup(dto);

@@ -132,9 +132,6 @@ public class NettyServerHandler extends ChannelDuplexHandler {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        super.exceptionCaught(ctx, cause);
-        log.debug("close#服务端发现异常!!", cause);
-        ctx.close();
-        nettServerHelper.getIpChannelMapping().remove(parse(ctx.channel()));
+        log.error("close#服务端发现异常.", cause);
     }
 }

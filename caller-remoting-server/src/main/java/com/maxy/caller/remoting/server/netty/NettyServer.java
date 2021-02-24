@@ -6,6 +6,7 @@ import com.maxy.caller.core.netty.config.NettyServerConfig;
 import com.maxy.caller.core.netty.serializer.kryo.KryoDecode;
 import com.maxy.caller.core.netty.serializer.kryo.KryoEncode;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -164,6 +165,11 @@ public class NettyServer extends AbstractNettyRemoting {
                                 .addLast(defaultEventExecutorGroup, nettyServerHandler);
                     }
                 });
+
+        if (nettyServerConfig.isServerPooledByteBufAllocatorEnable()) {
+            bootstrap.childOption(ChannelOption.ALLOCATOR, new PooledByteBufAllocator(true));
+        }
+
         ChannelFuture cf = null;
         try {
             cf = bootstrap.bind().sync();

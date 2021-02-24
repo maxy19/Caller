@@ -15,8 +15,8 @@ public class NettyServerConfig {
     private int serverWorkerThreads = 8;
     private int serverSelectorThreads = 3;
     private int serverChannelMaxIdleTimeSeconds = 120;
-    private int serverSocketSndBufSize = 65535;
-    private int serverSocketRcvBufSize = 65535;
+    private int serverSocketSndBufSize = 1024 * 1024;
+    private int serverSocketRcvBufSize = 1024 * 1024;
     private int serverReaderIdleTime = 100;
     private boolean serverPooledByteBufAllocatorEnable = true;
     private boolean useEpollNativeSelector = false;
