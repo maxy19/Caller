@@ -137,7 +137,7 @@ public class ScheduleWorker implements AdminWorker {
     private void addIndexQueue(List<TaskDetailInfoBO> preReadInfoList, int size) {
         Set<String> indexDataSet = new LinkedHashSet<>();
         preReadInfoList.forEach(indexData -> {
-            long slot = getSlot(indexData.getExecutionTime().getTime(), size / 2);
+            long slot = getMod(indexData.getExecutionTime().getTime(), size / 2);
             String indexDataFormat = ZSET_QUEUE_FORMAT.join(getUniqueName(indexData), slot);
             if (!indexDataSet.contains(indexDataFormat)) {
                 indexDataSet.add(indexDataFormat);
@@ -155,12 +155,12 @@ public class ScheduleWorker implements AdminWorker {
             dto.setDetailTaskId(taskDetailInfoBO.getId());
             long time = taskDetailInfoBO.getExecutionTime().getTime();
             //消除bigKey则将队列通过{node-1}分片 打散映射
-            long slot = getSlot(time, size / 2);
-            cacheService.zadd(ZSET_QUEUE_FORMAT.join(uniqueId, slot), (double) time, JSONUtils.toJSONString(dto));
+            long Index = getMod(time, size / 2);
+            cacheService.zadd(ZSET_QUEUE_FORMAT.join(uniqueId, tags.get((int) Index)), (double) time, JSONUtils.toJSONString(dto));
         });
     }
 
-    private long getSlot(long time, int masterSize) {
+    private long getMod(long time, int masterSize) {
         return time % masterSize;
     }
 

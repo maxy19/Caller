@@ -88,7 +88,7 @@ public class TriggerWorker implements AdminWorker {
         backupWorker.execute(() -> {
             int size = cacheService.getNodeMap().size();
             for (int i = 0; i < size / 2; i++) {
-                List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_BACKUP_FORMAT.join(i));
+                List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_BACKUP_FORMAT.join(tags.get(i)));
                 List<String> tasks = cacheService.getQueueDataByBackup(keys, ImmutableList.of("1000"));
                 if (CollectionUtils.isEmpty(tasks)) {
                     continue;
@@ -117,7 +117,7 @@ public class TriggerWorker implements AdminWorker {
         try {
             //获取索引列表
             for (int index = 0, length = cacheService.getNodeMap().size() / 2; index < length; index++) {
-                List<Object> queueData = getQueueData(index);
+                List<Object> queueData = getQueueData(tags.get(index));
                 if (CollectionUtils.isEmpty(queueData)) {
                     continue;
                 }
