@@ -1,11 +1,8 @@
 package com.maxy.caller.core.service;
 
-import com.google.common.collect.ImmutableList;
 import com.maxy.caller.bo.TaskBaseInfoBO;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.bo.TaskLogBO;
-
-import java.util.List;
 
 /**
  * @Author maxy
@@ -36,12 +33,5 @@ public interface CommonService {
     String STRATEGY_VALUE = "strategyValue";
     int ONE_MINUTE = 60;
     int ONE_HOUR = ONE_MINUTE * 60;
-    /**
-     * @todo 后期优化为配置中心可以随着机器增加与减少扩展
-     * hashTag
-     * value:0,slot:13907
-     * value:2,slot:5649
-     * value:3,slot:1584
-     */
-    List<Integer> tags = ImmutableList.of(0,2,3);
+
 }

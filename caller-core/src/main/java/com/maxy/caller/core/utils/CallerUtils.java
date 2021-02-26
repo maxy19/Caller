@@ -1,6 +1,9 @@
 package com.maxy.caller.core.utils;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelProgressiveFuture;
+import io.netty.channel.ChannelProgressiveFutureListener;
+import io.netty.channel.ChannelProgressivePromise;
 import lombok.extern.log4j.Log4j2;
 
 import java.net.Inet6Address;
@@ -11,6 +14,7 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -39,10 +43,15 @@ public class CallerUtils {
     }
 
     public static boolean isChannelWritable(Channel channel) {
-        if (channel != null && channel.isActive()) {
-            return channel.isWritable();
+        if (Objects.isNull(channel)) {
+            log.error("isChannelWritable#无法获取channel信息!!!");
+            return false;
         }
-        return false;
+        if (!channel.isWritable()) {
+            log.error("isChannelWritable#channel:{}超过水位线无法发送服务端信息!!!", channel);
+            return false;
+        }
+        return true;
     }
 
     public static List<String> parse(final List<Channel> channels) {
@@ -131,6 +140,23 @@ public class CallerUtils {
         sb.append(":");
         sb.append(inetSocketAddress.getPort());
         return sb.toString();
+    }
+
+
+    public static ChannelProgressivePromise getMonitor(Channel channel) {
+        ChannelProgressivePromise monitor = channel.newProgressivePromise();
+        monitor.addListener(new ChannelProgressiveFutureListener() {
+            @Override
+            public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) throws Exception {
+                log.info("数据正在发送中.....");
+            }
+
+            @Override
+            public void operationComplete(ChannelProgressiveFuture future) throws Exception {
+                log.info("数据已经发送完了！");
+            }
+        });
+        return monitor;
     }
 
 

@@ -73,7 +73,7 @@ public class TriggerWorker implements AdminWorker {
     @Resource
     private TaskLogService taskLogService;
     @Resource
-    private AdminConfigCenter adminConfigCenter;
+    private AdminConfigCenter config;
     @Resource
     private NettyServerHelper nettyServerHelper;
     private ThreadPoolConfig threadPoolConfig = ThreadPoolConfig.getInstance();
@@ -88,7 +88,7 @@ public class TriggerWorker implements AdminWorker {
         backupWorker.execute(() -> {
             int size = cacheService.getNodeMap().size();
             for (int i = 0; i < size / 2; i++) {
-                List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_BACKUP_FORMAT.join(tags.get(i)));
+                List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_BACKUP_FORMAT.join(config.getTags().get(i)));
                 List<String> tasks = cacheService.getQueueDataByBackup(keys, ImmutableList.of("1000"));
                 if (CollectionUtils.isEmpty(tasks)) {
                     continue;
@@ -117,7 +117,7 @@ public class TriggerWorker implements AdminWorker {
         try {
             //获取索引列表
             for (int index = 0, length = cacheService.getNodeMap().size() / 2; index < length; index++) {
-                List<Object> queueData = getQueueData(tags.get(index));
+                List<Object> queueData = getQueueData(config.getTags().get(index));
                 if (CollectionUtils.isEmpty(queueData)) {
                     continue;
                 }
@@ -140,7 +140,7 @@ public class TriggerWorker implements AdminWorker {
         List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_FORMAT.join(index));
         List<String> args = Arrays.asList("100",//length
                 "-inf", "+inf",
-                "LIMIT", "0", adminConfigCenter.getLimitNum());
+                "LIMIT", "0", config.getLimitNum());
         return cacheService.getQueueData(keys, args);
     }
 
@@ -214,7 +214,6 @@ public class TriggerWorker implements AdminWorker {
             Channel channel = getChannel(context.getRight(), channels);
             //是否可写入
             if (!CallerUtils.isChannelWritable(channel)) {
-                log.warn("remoteClientMethod#channel:{}", channel);
                 return;
             }
             boolean result = syncCallback(context.getRight(), channel);
@@ -300,10 +299,8 @@ public class TriggerWorker implements AdminWorker {
      * @return
      */
     private Value<Boolean> send(Channel channel, Value<Boolean> value, ProtocolMsg request) {
-        channel.writeAndFlush(request).addListener(future -> {
-            if (future.isSuccess()) {
-                log.info("send#[{}]发送成功!!!!", request.getRequestId());
-            } else {
+        channel.writeAndFlush(request, CallerUtils.getMonitor(channel)).addListener(future -> {
+            if (!future.isSuccess()) {
                 value.setValue(true);
                 log.error("send#发送失败,出现异常:{}", future.cause().getMessage());
             }

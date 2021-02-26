@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.maxy.caller.core.utils.CallerUtils.getMonitor;
+
 /**
  * @Author maxy
  **/
@@ -29,7 +31,15 @@ public class DelayTaskServiceImpl implements DelayTaskService {
     public boolean send(List<DelayTask> delayTasks) {
         validate(delayTasks);
         Channel channel = nettyClientHelper.getChannel();
-        channel.writeAndFlush(ProtocolMsg.toEntity(delayTasks));
+        if (Objects.isNull(channel)) {
+            log.error("send#无法获取channel信息.");
+            return false;
+        }
+        if (!channel.isWritable()) {
+            log.error("send#超过水位线无法发送服务端信息.");
+            return false;
+        }
+        channel.writeAndFlush(ProtocolMsg.toEntity(delayTasks), getMonitor(channel));
         log.info("delayTask任务发送:{}!!", channel);
         return true;
     }

@@ -1,6 +1,7 @@
 package com.maxy.caller.admin.worker;
 
 import com.maxy.caller.admin.cache.CacheService;
+import com.maxy.caller.admin.config.AdminConfigCenter;
 import com.maxy.caller.admin.service.AdminWorker;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.DateUtils;
@@ -61,7 +62,8 @@ public class ScheduleWorker implements AdminWorker {
     private TransactionDefinition transactionDefinition;
 
     private ExecutorService scheduleWorker = ThreadPoolConfig.getInstance().getSingleThreadExecutor(true);
-
+    @Resource
+    private AdminConfigCenter config;
 
     private volatile boolean toggle = true;
 
@@ -102,7 +104,7 @@ public class ScheduleWorker implements AdminWorker {
             taskLockService.lockForUpdate();
             //查询将要执行数据
             Date endDate = DateUtils.addSecond(60);
-            preReadInfoList = taskDetailInfoService.getPreReadInfo(ONLINE.getCode(), endDate);
+            preReadInfoList = taskDetailInfoService.getPreReadInfo(ONLINE.getCode(), endDate, config.getPreReadLimit());
             //校验
             if (CollectionUtils.isEmpty(preReadInfoList)) {
                 dataSourceTransactionManager.commit(transaction);
@@ -137,13 +139,13 @@ public class ScheduleWorker implements AdminWorker {
     private void addIndexQueue(List<TaskDetailInfoBO> preReadInfoList, int size) {
         Set<String> indexDataSet = new LinkedHashSet<>();
         preReadInfoList.forEach(indexData -> {
-            long slot = getMod(indexData.getExecutionTime().getTime(), size / 2);
-            String indexDataFormat = ZSET_QUEUE_FORMAT.join(getUniqueName(indexData), slot);
+            long index = getMod(indexData.getExecutionTime().getTime(), size / 2);
+            String indexDataFormat = ZSET_QUEUE_FORMAT.join(getUniqueName(indexData), config.getTags().get((int) index));
             if (!indexDataSet.contains(indexDataFormat)) {
                 indexDataSet.add(indexDataFormat);
                 //加入查询出来的数据并去重 同一个uniquKey{?}只需要一个就行,如果不去重则会对同一个uniqu{?} 查询多次
             }
-            cacheService.lpush(DICTIONARY_INDEX_FORMAT.join(slot), indexDataFormat);
+            cacheService.lpush(DICTIONARY_INDEX_FORMAT.join(config.getTags().get((int) index)), indexDataFormat);
         });
     }
 
@@ -156,7 +158,7 @@ public class ScheduleWorker implements AdminWorker {
             long time = taskDetailInfoBO.getExecutionTime().getTime();
             //消除bigKey则将队列通过{node-1}分片 打散映射
             long Index = getMod(time, size / 2);
-            cacheService.zadd(ZSET_QUEUE_FORMAT.join(uniqueId, tags.get((int) Index)), (double) time, JSONUtils.toJSONString(dto));
+            cacheService.zadd(ZSET_QUEUE_FORMAT.join(uniqueId, config.getTags().get((int) Index)), (double) time, JSONUtils.toJSONString(dto));
         });
     }
 
