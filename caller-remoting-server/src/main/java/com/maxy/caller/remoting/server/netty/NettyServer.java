@@ -127,7 +127,7 @@ public class NettyServer extends AbstractNettyRemoting {
                 /**
                  * 水位线 高于水位线则不会写入 必须等降调低水位线才会继续
                  */
-                .option(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(nettyServerConfig.getDefaultLowWaterMark(), nettyServerConfig.getDefaultHighWaterMark()))
+                .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(nettyServerConfig.getDefaultLowWaterMark(), nettyServerConfig.getDefaultHighWaterMark()))
                 /**
                  * netty提供了IdleStateHandler来检测心跳所以下面不需要
                  */

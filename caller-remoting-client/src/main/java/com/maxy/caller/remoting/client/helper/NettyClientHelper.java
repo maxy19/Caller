@@ -18,7 +18,6 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
@@ -74,7 +73,6 @@ public class NettyClientHelper {
                 }
                 log.error("执行方法:{}|参数:{}.出现异常!", methodModel.getTarget(), callerTaskDTO.getExecutionParam(), e);
             }
-            log.info("callerTaskEvent:任务ID:{},耗时:{}", protocolMsg.getRequestId(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
             return this;
         });
         return this;

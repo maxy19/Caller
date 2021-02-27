@@ -46,6 +46,7 @@ import java.util.function.BiConsumer;
 
 import static com.maxy.caller.admin.enums.RouterStrategyEnum.router;
 import static com.maxy.caller.core.common.RpcHolder.REQUEST_MAP;
+import static com.maxy.caller.core.constant.ThreadConstant.SEND_DELAY_TASK_THREAD_POOL;
 import static com.maxy.caller.core.enums.ExceptionEnum.FOUND_NOT_EXECUTE_INFO;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_SUCCEED;
@@ -79,7 +80,7 @@ public class TriggerWorker implements AdminWorker {
     private ThreadPoolConfig threadPoolConfig = ThreadPoolConfig.getInstance();
     private ExecutorService worker = threadPoolConfig.getSingleThreadExecutor(true);
     private ExecutorService backupWorker = threadPoolConfig.getSingleThreadExecutor(true);
-    private ExecutorService executorSchedule = threadPoolConfig.getPublicThreadPoolExecutor(true);
+    private ExecutorService executorSchedule = threadPoolConfig.getPublicThreadPoolExecutor(SEND_DELAY_TASK_THREAD_POOL);
     private CacheTimer cacheTimer = CacheTimer.getInstance();
     private volatile boolean toggle = true;
 
@@ -299,7 +300,7 @@ public class TriggerWorker implements AdminWorker {
      * @return
      */
     private Value<Boolean> send(Channel channel, Value<Boolean> value, ProtocolMsg request) {
-        channel.writeAndFlush(request, CallerUtils.getMonitor(channel)).addListener(future -> {
+        channel.writeAndFlush(request).addListener(future -> {
             if (!future.isSuccess()) {
                 value.setValue(true);
                 log.error("send#发送失败,出现异常:{}", future.cause().getMessage());

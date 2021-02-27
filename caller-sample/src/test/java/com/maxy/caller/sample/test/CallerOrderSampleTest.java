@@ -33,7 +33,7 @@ public class CallerOrderSampleTest {
     public void testSend() throws Exception {
         List<DelayTask> list = new ArrayList<>();
         DelayTask delayTask = null;
-        for (int i = 0; i <10; i++) {
+        for (int i = 0; i <20; i++) {
             delayTask = new DelayTask();
             delayTask.setGroupKey("taobao");
             delayTask.setBizKey("order");

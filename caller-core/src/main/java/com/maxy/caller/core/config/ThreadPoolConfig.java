@@ -31,39 +31,28 @@ public class ThreadPoolConfig {
         return InnerClass.INSTANCE;
     }
 
-    /**
-     * 公共的ThreadPool
-     *
-     * @return
-     */
     public ExecutorService getPublicThreadPoolExecutor(boolean isDaemon) {
         return getPublicThreadPoolExecutor(isDaemon, "public-thread-pool-executor");
     }
 
-    /**
-     * 公共的ThreadPool
-     *
-     * @return
-     */
-    public ExecutorService getPublicThreadPoolExecutor(boolean isDaemon, String threadName) {
-        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(CORE_SIZE, MAX_SIZE, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000),
-                getThreadFactory(threadName, isDaemon),
-                (r, executor) -> {
-                    log.warn("publicThreadExecutor#队列已经满员,正在调用拒绝策略!");
-                    if (!executor.isShutdown()) {
-                        r.run();
-                    }
-                });
-        return ThreadPoolRegisterCenter.register(threadPoolExecutor, 120);
+    public ExecutorService getPublicThreadPoolExecutor(String threadName) {
+        return getPublicThreadPoolExecutor(true, threadName);
     }
 
-    /**
-     * 公共单线程执行
-     *
-     * @return
-     */
+    public ScheduledThreadPoolExecutor getPublicScheduledExecutor(boolean isDaemon) {
+        return getPublicScheduledExecutor(CORE_SIZE, isDaemon);
+    }
+
+    public ScheduledThreadPoolExecutor getPublicScheduledExecutor(Integer corePoolSize, boolean isDaemon) {
+        return getPublicScheduledExecutor(corePoolSize, isDaemon, "public-scheduled-executor");
+    }
+
     public ExecutorService getSingleThreadExecutor(boolean isDaemon) {
         return getSingleThreadExecutor(true, "single-thread-pool-executor");
+    }
+
+    public ExecutorService getSingleThreadExecutor(String threadName) {
+        return getSingleThreadExecutor(true, threadName);
     }
 
     /**
@@ -88,24 +77,6 @@ public class ThreadPoolConfig {
      *
      * @return
      */
-    public ScheduledThreadPoolExecutor getPublicScheduledExecutor(boolean isDaemon) {
-        return getPublicScheduledExecutor(CORE_SIZE, isDaemon);
-    }
-
-    /**
-     * 公共的Scheduled定时任务
-     *
-     * @return
-     */
-    public ScheduledThreadPoolExecutor getPublicScheduledExecutor(Integer corePoolSize, boolean isDaemon) {
-        return getPublicScheduledExecutor(corePoolSize, isDaemon, "public-scheduled-executor");
-    }
-
-    /**
-     * 公共的Scheduled定时任务
-     *
-     * @return
-     */
     public ScheduledThreadPoolExecutor getPublicScheduledExecutor(Integer corePoolSize, boolean isDaemon, String threadName) {
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(corePoolSize,
                 getThreadFactory(threadName, isDaemon), (r, executor) -> {
@@ -115,6 +86,23 @@ public class ThreadPoolConfig {
             }
         });
         return (ScheduledThreadPoolExecutor) ThreadPoolRegisterCenter.register(scheduledThreadPoolExecutor, 120);
+    }
+
+    /**
+     * 公共的ThreadPool定时任务
+     *
+     * @return
+     */
+    public ExecutorService getPublicThreadPoolExecutor(boolean isDaemon, String threadName) {
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(CORE_SIZE, MAX_SIZE, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000),
+                getThreadFactory(threadName, isDaemon),
+                (r, executor) -> {
+                    log.warn("publicThreadExecutor#队列已经满员,正在调用拒绝策略!");
+                    if (!executor.isShutdown()) {
+                        r.run();
+                    }
+                });
+        return ThreadPoolRegisterCenter.register(threadPoolExecutor, 120);
     }
 
 
