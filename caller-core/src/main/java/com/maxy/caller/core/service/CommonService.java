@@ -28,10 +28,15 @@ public interface CommonService {
     default String getUniqueName(TaskLogBO taskLogBO) {
         return String.join(":", taskLogBO.getGroupKey(), taskLogBO.getBizKey(), taskLogBO.getTopic());
     }
+    default long mod(long time, int masterSize) {
+        return time % masterSize;
+    }
 
     String ALARM_EMAIL = "alarmEmail";
     String STRATEGY_VALUE = "strategyValue";
     int ONE_MINUTE = 60;
+    int ONE_MILLISECOND = 1;
+    int ONE_SECOND = ONE_MILLISECOND * 1000;
     int ONE_HOUR = ONE_MINUTE * 60;
 
 }

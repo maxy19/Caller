@@ -26,6 +26,10 @@ public enum ExecutionStatusEnum {
         this.desc = desc;
     }
 
+    public static boolean isFinalState(byte state){
+        return Arrays.asList(EXECUTION_FAILED,EXECUTION_SUCCEED,EXPIRED).contains(state);
+    }
+
     public static String getName(Byte status) {
         return Arrays.stream(ExecutionStatusEnum.values()).filter(ele -> status.equals(ele.getCode())).findFirst().get().name();
     }

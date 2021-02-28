@@ -17,11 +17,16 @@ public class AdminConfigCenter {
     @Value("${caller.admin.limit.num:500}")
     private String limitNum;
 
-    @Value("${caller.admin.limit.num:1000}")
+    @Value("${caller.admin.limit.num:10}")
     private String indexLimitNum;
 
     @Value("${caller.admin.pre.read:100}")
     private String preReadLimit;
+
+    @Value("${caller.admin.push.cycle:60}")
+    private Integer pushCycleTime;
+    @Value("${caller.admin.pop.cycle:10}")
+    private Integer popCycleTime;
 
     /**
      * hashTag

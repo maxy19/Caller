@@ -28,7 +28,7 @@ public class TaskDetailInfoTest {
     @Test
     public void test() {
         List<TaskDetailInfoBO> list = new ArrayList<>();
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 60; i++) {
             TaskDetailInfoBO taskDetailInfoBO = new TaskDetailInfoBO();
             taskDetailInfoBO.setGroupKey("taobao");
             taskDetailInfoBO.setBizKey("order");
@@ -36,7 +36,7 @@ public class TaskDetailInfoTest {
             taskDetailInfoBO.setExecutionParam("test1");
             taskDetailInfoBO.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 10, ChronoUnit.SECONDS));
             taskDetailInfoBO.setExecutionStatus((byte) 1);
-            taskDetailInfoBO.setTimeout(4000);
+            taskDetailInfoBO.setTimeout(1500);
             taskDetailInfoBO.setRetryNum((byte) 3);
             list.add(taskDetailInfoBO);
         }

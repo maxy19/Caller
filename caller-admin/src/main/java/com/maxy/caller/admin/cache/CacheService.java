@@ -29,6 +29,10 @@ public class CacheService {
         return jedisCluster.getClusterNodes();
     }
 
+    public int getMasterNodeSize() {
+        return jedisCluster.getClusterNodes().size() / 2;
+    }
+
 
     public Long zadd(String key, double score, String member) {
         return jedisCluster.zadd(key, score, member);
@@ -45,7 +49,6 @@ public class CacheService {
                 "    local value = redis.call('RPOP', KEYS[1])\n" +
                 "    if (value) then\n" +
                 "        table.insert(result, value)\n" +
-                "        \n" +
                 "    end\n" +
                 "end\n" +
                 "return result\n";
@@ -55,20 +58,15 @@ public class CacheService {
 
     public List<Object> getQueueData(List<String> keys, List<String> args) {
         String script = "local result = {}\n" +
-                "local length = ARGV[1]\n" +
-                "local backupQueue = KEYS[1] .. ':backup'\n" +
-                "for i = 1, tonumber(length) do\n" +
-                "    local key = redis.call('RPOP', KEYS[1])\n" +
-                "    if (key) then\n" +
-                "        local values = redis.call('ZRANGEBYSCORE', key, ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6])\n" +
-                "        if (#values >= 1) then\n" +
-                "            for j, v in ipairs(values) do\n" +
-                "                local backupValue = redis.call('LPUSH', backupQueue, v)\n" +
-                "                redis.call('ZREM', key, v)\n" +
-                "            end\n" +
-                "            result[i] = values\n" +
+                "local values = redis.call('ZRANGEBYSCORE', KEYS[1], ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5])\n" +
+                "if (#values > 0) then\n" +
+                "    for i, v in ipairs(values) do\n" +
+                "        local value = redis.call('LPUSH', KEYS[2], v)\n" +
+                "        if (value) then\n" +
+                "            redis.call('ZREM', KEYS[1], v)\n" +
                 "        end\n" +
                 "    end\n" +
+                "    result[1] = values\n" +
                 "end\n" +
                 "return result";
         return (List<Object>) jedisCluster.eval(script, keys, args);
@@ -106,7 +104,7 @@ public class CacheService {
         return jedisCluster.get(key);
     }
 
-    public void lrem(String key, String arg) {
-        jedisCluster.lrem(key, 1, arg);
+    public long lrem(String key, String arg) {
+        return jedisCluster.lrem(key, 1, arg);
     }
 }

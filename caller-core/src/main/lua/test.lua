@@ -6,20 +6,15 @@
 
 
 local result = {}
-local length = ARGV[1]
-local backupQueue = KEYS[1] .. ':backup'
-for i = 1, tonumber(length) do
-    local key = redis.call('RPOP', KEYS[1])
-    if (key) then
-        local values = redis.call('ZRANGEBYSCORE', key, ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6])
-        if (#values > 0) then
-            for j, v in ipairs(values) do
-                local backupValue = redis.call('LPUSH', backupQueue, v);
-                redis.call('ZREM', key, v)
-            end
-            result[i] = values
+local values = redis.call('ZRANGEBYSCORE', KEYS[1], ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5])
+if (#values > 0) then
+    for i, v in ipairs(values) do
+        local value = redis.call('LPUSH', KEYS[2], v)
+        if (value) then
+            redis.call('ZREM', KEYS[1], v)
         end
     end
+    result[1] = values;
 end
 return result
 

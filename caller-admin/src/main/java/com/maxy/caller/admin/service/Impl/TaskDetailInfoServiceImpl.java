@@ -2,13 +2,13 @@ package com.maxy.caller.admin.service.Impl;
 
 import com.github.pagehelper.PageInfo;
 import com.maxy.caller.admin.cache.CacheService;
+import com.maxy.caller.admin.config.AdminConfigCenter;
 import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
 import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.common.utils.JSONUtils;
 import com.maxy.caller.core.service.TaskDetailInfoService;
-import com.maxy.caller.dto.CallerTaskDTO;
 import com.maxy.caller.model.TaskDetailInfo;
 import com.maxy.caller.model.TaskGroup;
 import com.maxy.caller.persistent.example.TaskDetailInfoExample;
@@ -24,7 +24,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
-import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX_BACKUP_FORMAT;
+import static com.maxy.caller.core.enums.GenerateKeyEnum.LIST_QUEUE_FORMAT_BACKUP;
 
 /**
  * @Author maxy
@@ -37,6 +37,8 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     private TaskGroupMapper taskGroupMapper;
     @Resource
     private CacheService cacheService;
+    @Resource
+    private AdminConfigCenter config;
 
     @Override
     public PageInfo<TaskDetailInfoBO> list(QueryConditionBO queryConditionBO) {
@@ -120,11 +122,9 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     }
 
     @Override
-    public void removeBackup(CallerTaskDTO callerTaskDTO) {
-        int totalSlot = cacheService.getNodeMap().size() / 2;
-        for (int slot = 0; slot < totalSlot; slot++) {
-            String key = DICTIONARY_INDEX_BACKUP_FORMAT.join(slot);
-            cacheService.lrem(key, JSONUtils.toJSONString(callerTaskDTO));
-        }
+    public boolean removeBackup(TaskDetailInfoBO taskDetailInfoBO) {
+        long time = taskDetailInfoBO.getExecutionTime().getTime();
+        String key = LIST_QUEUE_FORMAT_BACKUP.join(config.getTags().get((int) mod(time, cacheService.getMasterNodeSize())));
+        return cacheService.lrem(key, JSONUtils.toJSONString(taskDetailInfoBO)) > 0 ;
     }
 }

@@ -2,6 +2,7 @@ package com.maxy.caller.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.JSONUtils;
 import lombok.Data;
 
@@ -53,6 +54,18 @@ public class CallerTaskDTO {
     @JsonIgnore
     public String getUniqueKey() {
         return String.join(":", groupKey, bizKey, topic);
+    }
+    @JsonIgnore
+    public CallerTaskDTO fullField(TaskDetailInfoBO bo) {
+        setGroupKey(bo.getGroupKey());
+        setTopic(bo.getTopic());
+        setExecutionParam(bo.getExecutionParam());
+        setExecutionTime(bo.getExecutionTime());
+        setTimeout(bo.getTimeout());
+        setRetryNum(bo.getRetryNum());
+        setDetailTaskId(bo.getId());
+        setBizKey(bo.getBizKey());
+        return this;
     }
 
 

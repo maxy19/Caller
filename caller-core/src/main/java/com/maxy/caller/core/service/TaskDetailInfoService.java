@@ -3,7 +3,6 @@ package com.maxy.caller.core.service;
 import com.github.pagehelper.PageInfo;
 import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskDetailInfoBO;
-import com.maxy.caller.dto.CallerTaskDTO;
 
 import java.util.Date;
 import java.util.List;
@@ -31,5 +30,5 @@ public interface TaskDetailInfoService extends CommonService {
 
     List<TaskDetailInfoBO> getTaskDetailList(String groupKey, String bizKey, String topic);
 
-    void removeBackup(CallerTaskDTO callerTaskDTO);
+    boolean removeBackup(TaskDetailInfoBO taskDetailInfoBO);
 }

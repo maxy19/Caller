@@ -1,7 +1,7 @@
 package com.maxy.caller.bo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.maxy.caller.common.utils.JSONUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.util.Date;
@@ -48,6 +48,7 @@ public class TaskDetailInfoBO {
     /**
      * 0:未上线 1:已上线 2.暂停 3:执行中 4:重试中 5:执行成功 6:执行失败
      */
+    @JsonIgnore
     private Byte executionStatus;
 
     /**
@@ -71,6 +72,28 @@ public class TaskDetailInfoBO {
 
     @Override
     public String toString() {
-        return JSONUtils.toJSONString(this);
+        return "{\"TaskDetailInfoBO\":{"
+                + "\"id\":"
+                + id
+                + ",\"groupKey\":\""
+                + groupKey + '\"'
+                + ",\"bizKey\":\""
+                + bizKey + '\"'
+                + ",\"topic\":\""
+                + topic + '\"'
+                + ",\"executionParam\":\""
+                + executionParam + '\"'
+                + ",\"executionTime\":\""
+                + executionTime + '\"'
+                + ",\"executionStatus\":"
+                + executionStatus
+                + ",\"timeout\":"
+                + timeout
+                + ",\"retryNum\":"
+                + retryNum
+                + ",\"errorMsg\":\""
+                + errorMsg + '\"'
+                + "}}";
+
     }
 }

@@ -27,6 +27,8 @@ import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.maxy.caller.core.constant.ThreadConstant.CLIENT_HANDLE_THREAD_POOL;
+
 /**
  * @Author maxy
  **/
@@ -49,7 +51,7 @@ public class NettyClient extends AbstractNettyRemoting {
     @PostConstruct
     private void initialize() {
         //多线程处理handle
-        initDefaultExecutor("caller-netty-client-handle-thread_%d", nettyClientConfig.getClientWorkerThreads());
+        initDefaultExecutor(CLIENT_HANDLE_THREAD_POOL, nettyClientConfig.getClientWorkerThreads());
     }
 
     public void start(List<RegConfigInfo.AddressInfo> addressInfos, CountDownLatch countDownLatch) {

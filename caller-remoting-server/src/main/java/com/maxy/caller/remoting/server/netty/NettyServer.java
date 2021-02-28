@@ -29,6 +29,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.maxy.caller.core.constant.ThreadConstant.SERVER_HANDLE_THREAD_POOL;
+
 /**
  * @Author maxy
  **/
@@ -62,7 +64,7 @@ public class NettyServer extends AbstractNettyRemoting {
             initNIO();
         }
         //多线程处理handle
-        initDefaultExecutor("caller-netty-server-handle-thread_%d", nettyServerConfig.getServerWorkerThreads());
+        initDefaultExecutor(SERVER_HANDLE_THREAD_POOL, nettyServerConfig.getServerWorkerThreads());
     }
 
 

@@ -8,9 +8,9 @@ import java.util.Objects;
  **/
 public enum GenerateKeyEnum {
 
-    DICTIONARY_INDEX_FORMAT("caller:dic:index:{%s}"),
-    DICTIONARY_INDEX_BACKUP_FORMAT("caller:dic:index:{%s}:backup"),
-    ZSET_QUEUE_FORMAT("caller:%s:zset:{%s}"),
+    DETAIL_TASK_INFO("detail:task:info:%s"),
+    ZSET_QUEUE_FORMAT("caller:zset:{%s}"),
+    LIST_QUEUE_FORMAT_BACKUP("caller:list:backup:{%s}"),
     ;
 
     private String key;

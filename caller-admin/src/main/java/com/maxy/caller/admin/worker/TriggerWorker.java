@@ -30,6 +30,7 @@ import io.netty.util.concurrent.DefaultPromise;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Component;
 
@@ -52,8 +53,10 @@ import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_SUCCEED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXPIRED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.RETRYING;
-import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX_BACKUP_FORMAT;
-import static com.maxy.caller.core.enums.GenerateKeyEnum.DICTIONARY_INDEX_FORMAT;
+import static com.maxy.caller.core.enums.ExecutionStatusEnum.isFinalState;
+import static com.maxy.caller.core.enums.GenerateKeyEnum.DETAIL_TASK_INFO;
+import static com.maxy.caller.core.enums.GenerateKeyEnum.LIST_QUEUE_FORMAT_BACKUP;
+import static com.maxy.caller.core.enums.GenerateKeyEnum.ZSET_QUEUE_FORMAT;
 import static com.maxy.caller.core.utils.CallerUtils.parse;
 
 /**
@@ -87,10 +90,10 @@ public class TriggerWorker implements AdminWorker {
     @PostConstruct
     public void init() {
         backupWorker.execute(() -> {
-            int size = cacheService.getNodeMap().size();
-            for (int i = 0; i < size / 2; i++) {
-                List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_BACKUP_FORMAT.join(config.getTags().get(i)));
-                List<String> tasks = cacheService.getQueueDataByBackup(keys, ImmutableList.of("1000"));
+            int size = cacheService.getMasterNodeSize();
+            for (int i = 0; i < size; i++) {
+                List<String> keys = Lists.newArrayList(LIST_QUEUE_FORMAT_BACKUP.join(config.getTags().get(i)));
+                List<String> tasks = cacheService.getQueueDataByBackup(keys, ImmutableList.of(config.getLimitNum()));
                 if (CollectionUtils.isEmpty(tasks)) {
                     continue;
                 }
@@ -117,13 +120,14 @@ public class TriggerWorker implements AdminWorker {
     private void pop() {
         try {
             //获取索引列表
-            for (int index = 0, length = cacheService.getNodeMap().size() / 2; index < length; index++) {
-                List<Object> queueData = getQueueData(config.getTags().get(index));
+            for (int index = 0, length = cacheService.getMasterNodeSize(); index < length; index++) {
+                Integer slot = config.getTags().get(index);
+                List<Object> queueData = getQueueData(slot);
                 if (CollectionUtils.isEmpty(queueData)) {
                     continue;
                 }
                 //循环执行
-                log.info("找到数据!!,槽位:{}", index);
+                log.info("找到数据!!,槽位:{}", slot);
                 invokeAll(queueData);
             }
         } catch (Exception e) {
@@ -134,14 +138,12 @@ public class TriggerWorker implements AdminWorker {
     /**
      * lua执行redis获取数据
      *
-     * @param index
+     * @param slot
      * @return
      */
-    private List<Object> getQueueData(int index) {
-        List<String> keys = Lists.newArrayList(DICTIONARY_INDEX_FORMAT.join(index));
-        List<String> args = Arrays.asList("100",//length
-                "-inf", "+inf",
-                "LIMIT", "0", config.getLimitNum());
+    private List<Object> getQueueData(int slot) {
+        List<String> keys = Lists.newArrayList(ZSET_QUEUE_FORMAT.join(slot), LIST_QUEUE_FORMAT_BACKUP.join(slot));
+        List<String> args = Arrays.asList("-inf", "+inf", "LIMIT", "0", config.getLimitNum());
         return cacheService.getQueueData(keys, args);
     }
 
@@ -155,9 +157,13 @@ public class TriggerWorker implements AdminWorker {
         TaskDetailInfoBO taskDetailInfoBO = context.getLeft();
         if (taskDetailInfoBO.getExecutionTime().getTime() <= System.currentTimeMillis()) {
             log.warn("checkExpireTaskInfo#[{}]任务,时间:[{}]已过期将丢弃.", getUniqueName(taskDetailInfoBO), taskDetailInfoBO.getExecutionTime());
+            taskDetailInfoService.removeBackup(taskDetailInfoBO);
+            //如果是最终态则不用更新
+            if(isFinalState(taskDetailInfoBO.getExecutionStatus())){
+               return true;
+            }
             taskDetailInfoBO.setExecutionStatus(EXPIRED.getCode());
             taskDetailInfoService.update(taskDetailInfoBO);
-            taskDetailInfoService.removeBackup(context.getRight());
             taskLogService.save(taskDetailInfoBO);
             return true;
         }
@@ -184,17 +190,25 @@ public class TriggerWorker implements AdminWorker {
      */
     private void invoke(List<String> list) {
         for (String element : list) {
-            CallerTaskDTO callerTaskDTO = JSONUtils.parseObject(element, CallerTaskDTO.class);
-            TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.getByInfoId(callerTaskDTO.getDetailTaskId());
-            Pair<TaskDetailInfoBO, CallerTaskDTO> context = Pair.of(taskDetailInfoBO, callerTaskDTO);
+            TaskDetailInfoBO detailInfoBO = JSONUtils.parseObject(element, TaskDetailInfoBO.class);
+            CallerTaskDTO dto = new CallerTaskDTO().fullField(detailInfoBO);
+            Pair<TaskDetailInfoBO, CallerTaskDTO> context = Pair.of(detailInfoBO, dto);
             if (checkExpireTaskInfo(context)) {
                 continue;
             }
-            log.debug("invoke#[{}]放入定时轮.", callerTaskDTO.getDetailTaskId());
+            log.debug("invoke#[{}]放入定时轮.", dto.getDetailTaskId());
             cacheTimer.newTimeout(timeout -> {
                 remoteClientMethod(context);
-            }, callerTaskDTO.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+            }, dto.getExecutionTime().getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
         }
+    }
+
+    private TaskDetailInfoBO getDetailTask(CallerTaskDTO callerTaskDTO) {
+        String value = cacheService.get(DETAIL_TASK_INFO.join(callerTaskDTO.getDetailTaskId()));
+        if (StringUtils.isBlank(value)) {
+            return taskDetailInfoService.getByInfoId(callerTaskDTO.getDetailTaskId());
+        }
+        return JSONUtils.parseObject(value, TaskDetailInfoBO.class);
     }
 
 
@@ -220,12 +234,12 @@ public class TriggerWorker implements AdminWorker {
             boolean result = syncCallback(context.getRight(), channel);
             //发现异常如果需要重试将再次调用方法
             if (result) {
-                if (context.getLeft().getRetryNum() > 0) {
+                if (context.getRight().getRetryNum() > 0) {
                     retryExecute(context, channel);
                 } else {
+                    taskDetailInfoService.removeBackup(context.getLeft());
                     context.getLeft().fillStatusAndErrorMsg("执行远程方法异常!", EXECUTION_FAILED.getCode());
                     taskDetailInfoService.update(context.getLeft());
-                    taskDetailInfoService.removeBackup(context.getRight());
                     taskLogService.save(context.getLeft(), parse(channel), (byte) 0);
                 }
             }
@@ -254,9 +268,9 @@ public class TriggerWorker implements AdminWorker {
         for (byte retryNum = 0, totalNum = context.getRight().getRetryNum(); retryNum < totalNum; retryNum++) {
             boolean result = syncCallback(context.getRight(), channel);
             if (result) {
+                taskDetailInfoService.removeBackup(context.getLeft());
                 context.getLeft().setExecutionStatus(RETRYING.getCode());
                 taskDetailInfoService.update(context.getLeft());
-                taskDetailInfoService.removeBackup(context.getRight());
                 taskLogService.save(context.getLeft(), parse(channel), retryNum);
                 return;
             }
@@ -276,7 +290,7 @@ public class TriggerWorker implements AdminWorker {
         //request
         Value<Boolean> result = send(channel, value, request);
         if (result.getValue()) {
-            return result.getValue();
+            return true;
         }
         //callback
         try {
@@ -315,15 +329,15 @@ public class TriggerWorker implements AdminWorker {
     private BiConsumer<ProtocolMsg, Channel> handleCallback = ((response, channel) -> {
         RpcRequestDTO request = (RpcRequestDTO) getRequest(response);
         CallerTaskDTO dto = request.getCallerTaskDTO();
-        TaskDetailInfoBO taskDetailInfoBO = taskDetailInfoService.getByInfoId(dto.getDetailTaskId());
+        TaskDetailInfoBO taskDetailInfoBO = getDetailTask(dto);
         if (Objects.isNull(taskDetailInfoBO)) {
             throw new BusinessException(FOUND_NOT_EXECUTE_INFO);
         }
+        taskDetailInfoService.removeBackup(taskDetailInfoBO);
         ResultDTO resultDTO = request.getResultDTO();
         taskDetailInfoBO.setExecutionStatus(resultDTO.isSuccess() ? EXECUTION_SUCCEED.getCode() : EXECUTION_FAILED.getCode());
         taskDetailInfoBO.setErrorMsg(resultDTO.getMessage());
         taskDetailInfoService.update(taskDetailInfoBO);
-        taskDetailInfoService.removeBackup(dto);
         taskLogService.saveClientResult(taskDetailInfoBO, resultDTO.getMessage(), parse(channel));
     });
 
