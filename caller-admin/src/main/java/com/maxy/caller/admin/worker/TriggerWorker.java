@@ -8,6 +8,7 @@ import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.admin.config.AdminConfigCenter;
 import com.maxy.caller.admin.service.AdminWorker;
 import com.maxy.caller.bo.TaskDetailInfoBO;
+import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.common.utils.JSONUtils;
 import com.maxy.caller.core.common.RpcFuture;
 import com.maxy.caller.core.config.ThreadPoolConfig;
@@ -143,7 +144,7 @@ public class TriggerWorker implements AdminWorker {
      */
     private List<Object> getQueueData(int slot) {
         List<String> keys = Lists.newArrayList(ZSET_QUEUE_FORMAT.join(slot), LIST_QUEUE_FORMAT_BACKUP.join(slot));
-        List<String> args = Arrays.asList("-inf", "+inf", "LIMIT", "0", config.getLimitNum());
+        List<String> args = Arrays.asList("-inf", String.valueOf(DateUtils.addSecond(config.getPopCycleTime()).getTime()), "LIMIT", "0", config.getLimitNum());
         return cacheService.getQueueData(keys, args);
     }
 

@@ -25,7 +25,7 @@ public class AdminConfigCenter {
 
     @Value("${caller.admin.push.cycle:60}")
     private Integer pushCycleTime;
-    @Value("${caller.admin.pop.cycle:10}")
+    @Value("${caller.admin.pop.cycle:30}")
     private Integer popCycleTime;
 
     /**
