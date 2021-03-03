@@ -48,7 +48,8 @@ import java.util.function.BiConsumer;
 
 import static com.maxy.caller.admin.enums.RouterStrategyEnum.router;
 import static com.maxy.caller.core.common.RpcHolder.REQUEST_MAP;
-import static com.maxy.caller.core.constant.ThreadConstant.SEND_DELAY_TASK_THREAD_POOL;
+import static com.maxy.caller.core.constant.ThreadConstant.INVOKE_CLIENT_TASK_THREAD_POOL;
+import static com.maxy.caller.core.constant.ThreadConstant.RETRY_TASK_THREAD_POOL;
 import static com.maxy.caller.core.enums.ExceptionEnum.FOUND_NOT_EXECUTE_INFO;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_SUCCEED;
@@ -84,8 +85,9 @@ public class TriggerWorker implements AdminWorker {
     private ThreadPoolConfig threadPoolConfig = ThreadPoolConfig.getInstance();
     private ExecutorService worker = threadPoolConfig.getSingleThreadExecutor(true);
     private ExecutorService backupWorker = threadPoolConfig.getSingleThreadExecutor(true);
-    private ExecutorService executorSchedule = threadPoolConfig.getPublicThreadPoolExecutor(SEND_DELAY_TASK_THREAD_POOL);
+    private ExecutorService executorSchedule = threadPoolConfig.getPublicThreadPoolExecutor(INVOKE_CLIENT_TASK_THREAD_POOL);
     private CacheTimer cacheTimer = CacheTimer.getInstance();
+    private ExecutorService retryExecutor = threadPoolConfig.getPublicThreadPoolExecutor(RETRY_TASK_THREAD_POOL);
     private volatile boolean toggle = true;
 
     @PostConstruct
@@ -236,7 +238,7 @@ public class TriggerWorker implements AdminWorker {
             //发现异常如果需要重试将再次调用方法
             if (result) {
                 if (context.getRight().getRetryNum() > 0) {
-                    retryExecute(context, channel);
+                    retryExecutor.execute(() -> retryExecute(context, channel));
                 } else {
                     taskDetailInfoService.removeBackup(context.getLeft());
                     context.getLeft().fillStatusAndErrorMsg("执行远程方法异常!", EXECUTION_FAILED.getCode());
@@ -266,7 +268,7 @@ public class TriggerWorker implements AdminWorker {
      * 重试
      */
     private void retryExecute(Pair<TaskDetailInfoBO, CallerTaskDTO> context, Channel channel) {
-        for (byte retryNum = 0, totalNum = context.getRight().getRetryNum(); retryNum < totalNum; retryNum++) {
+        for (byte retryNum = 1, totalNum = context.getRight().getRetryNum(); retryNum <= totalNum; retryNum++) {
             boolean result = syncCallback(context.getRight(), channel);
             if (result) {
                 taskDetailInfoService.removeBackup(context.getLeft());
