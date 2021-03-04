@@ -28,7 +28,7 @@ public class TaskDetailInfoTest {
     @Test
     public void test() {
         List<TaskDetailInfoBO> list = new ArrayList<>();
-        for (int i = 0; i < 60; i++) {
+        for (int i = 0; i < 100; i++) {
             TaskDetailInfoBO taskDetailInfoBO = new TaskDetailInfoBO();
             taskDetailInfoBO.setGroupKey("taobao");
             taskDetailInfoBO.setBizKey("order");

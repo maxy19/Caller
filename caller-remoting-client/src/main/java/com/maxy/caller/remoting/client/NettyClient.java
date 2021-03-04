@@ -7,6 +7,7 @@ import com.maxy.caller.core.netty.serializer.kryo.KryoEncode;
 import com.maxy.caller.pojo.RegConfigInfo;
 import com.maxy.caller.pojo.Value;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
@@ -64,6 +65,7 @@ public class NettyClient extends AbstractNettyRemoting {
                 .option(ChannelOption.SO_SNDBUF, nettyClientConfig.getClientSocketSndBufSize())
                 .option(ChannelOption.SO_RCVBUF, nettyClientConfig.getClientSocketRcvBufSize())
                 .option(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(nettyClientConfig.getDefaultLowWaterMark(), nettyClientConfig.getDefaultHighWaterMark()))
+                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {

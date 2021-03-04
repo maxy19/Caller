@@ -270,11 +270,11 @@ public class TriggerWorker implements AdminWorker {
     private void retryExecute(Pair<TaskDetailInfoBO, CallerTaskDTO> context, Channel channel) {
         for (byte retryNum = 1, totalNum = context.getRight().getRetryNum(); retryNum <= totalNum; retryNum++) {
             boolean result = syncCallback(context.getRight(), channel);
+            context.getLeft().setExecutionStatus(RETRYING.getCode());
+            taskLogService.save(context.getLeft(), parse(channel), retryNum);
             if (result) {
                 taskDetailInfoService.removeBackup(context.getLeft());
-                context.getLeft().setExecutionStatus(RETRYING.getCode());
                 taskDetailInfoService.update(context.getLeft());
-                taskLogService.save(context.getLeft(), parse(channel), retryNum);
                 return;
             }
         }
