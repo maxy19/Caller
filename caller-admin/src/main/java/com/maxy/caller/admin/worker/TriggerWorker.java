@@ -26,8 +26,10 @@ import com.maxy.caller.dto.RpcRequestDTO;
 import com.maxy.caller.pojo.Value;
 import com.maxy.caller.remoting.server.netty.helper.NettyServerHelper;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.DefaultEventExecutor;
 import io.netty.util.concurrent.DefaultPromise;
+import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -162,8 +164,8 @@ public class TriggerWorker implements AdminWorker {
             log.warn("checkExpireTaskInfo#[{}]任务,时间:[{}]已过期将丢弃.", getUniqueName(taskDetailInfoBO), taskDetailInfoBO.getExecutionTime());
             taskDetailInfoService.removeBackup(taskDetailInfoBO);
             //如果是最终态则不用更新
-            if(isFinalState(taskDetailInfoBO.getExecutionStatus())){
-               return true;
+            if (isFinalState(taskDetailInfoBO.getExecutionStatus())) {
+                return true;
             }
             taskDetailInfoBO.setExecutionStatus(EXPIRED.getCode());
             taskDetailInfoService.update(taskDetailInfoBO);
@@ -230,13 +232,9 @@ public class TriggerWorker implements AdminWorker {
             }
             //获取channel
             Channel channel = getChannel(context.getRight(), channels);
-            //是否可写入
-            if (!CallerUtils.isChannelWritable(channel)) {
-                return;
-            }
             boolean result = syncCallback(context.getRight(), channel);
             //发现异常如果需要重试将再次调用方法
-            if (result) {
+            if (!result) {
                 if (context.getRight().getRetryNum() > 0) {
                     retryExecutor.execute(() -> retryExecute(context, channel));
                 } else {
@@ -272,7 +270,7 @@ public class TriggerWorker implements AdminWorker {
             boolean result = syncCallback(context.getRight(), channel);
             context.getLeft().setExecutionStatus(RETRYING.getCode());
             taskLogService.save(context.getLeft(), parse(channel), retryNum);
-            if (result) {
+            if (!result) {
                 taskDetailInfoService.removeBackup(context.getLeft());
                 taskDetailInfoService.update(context.getLeft());
                 return;
@@ -287,13 +285,13 @@ public class TriggerWorker implements AdminWorker {
      * @return
      */
     private boolean syncCallback(CallerTaskDTO callerTaskDTO, Channel channel) {
-        Value<Boolean> value = new Value<>(false);
+        Value<Boolean> value = new Value<>(true);
         RpcFuture<ProtocolMsg> rpcFuture = new RpcFuture(new DefaultPromise(new DefaultEventExecutor()), callerTaskDTO.getTimeout());
         ProtocolMsg request = ProtocolMsg.toEntity(callerTaskDTO);
         //request
-        Value<Boolean> result = send(channel, value, request);
-        if (result.getValue()) {
-            return true;
+        boolean result = send(channel, value, request);
+        if (!result) {
+            return false;
         }
         //callback
         try {
@@ -302,7 +300,7 @@ public class TriggerWorker implements AdminWorker {
             handleCallback.accept(rpcFuture.getPromise().get(rpcFuture.getTimeout(), TimeUnit.MILLISECONDS), channel);
             log.info("syncCallback:任务ID:{},耗时:{}", callerTaskDTO.getDetailTaskId(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            value.setValue(true);
+            value.setValue(false);
             log.error("syncCallback#调用方法超时或者遇到异常！参数:{}", callerTaskDTO, e);
         }
         return value.getValue();
@@ -316,14 +314,16 @@ public class TriggerWorker implements AdminWorker {
      * @param request
      * @return
      */
-    private Value<Boolean> send(Channel channel, Value<Boolean> value, ProtocolMsg request) {
-        channel.writeAndFlush(request).addListener(future -> {
-            if (!future.isSuccess()) {
-                value.setValue(true);
-                log.error("send#发送失败,出现异常:{}", future.cause().getMessage());
-            }
-        });
-        return value;
+    @SneakyThrows
+    private boolean send(Channel channel, Value<Boolean> value, ProtocolMsg request) {
+        ChannelFuture channelFuture = null;
+        if (!CallerUtils.isChannelWritable(channel)) {
+            channelFuture = channel.writeAndFlush(request).sync();
+        } else {
+            channelFuture = channel.writeAndFlush(request);
+        }
+        value.setValue(CallerUtils.monitor(channelFuture));
+        return value.getValue();
     }
 
     /**

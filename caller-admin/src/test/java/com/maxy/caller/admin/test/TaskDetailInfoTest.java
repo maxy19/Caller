@@ -26,7 +26,7 @@ public class TaskDetailInfoTest {
 
     @SneakyThrows
     @Test
-    public void test() {
+    public void batchInsert() {
         List<TaskDetailInfoBO> list = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             TaskDetailInfoBO taskDetailInfoBO = new TaskDetailInfoBO();

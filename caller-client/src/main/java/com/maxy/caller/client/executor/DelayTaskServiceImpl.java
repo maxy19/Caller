@@ -3,9 +3,12 @@ package com.maxy.caller.client.executor;
 import com.google.common.base.Preconditions;
 import com.maxy.caller.core.netty.protocol.ProtocolMsg;
 import com.maxy.caller.core.service.DelayTaskService;
+import com.maxy.caller.core.utils.CallerUtils;
 import com.maxy.caller.pojo.DelayTask;
 import com.maxy.caller.remoting.client.helper.NettyClientHelper;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
@@ -16,8 +19,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.maxy.caller.core.utils.CallerUtils.getMonitor;
-
 /**
  * @Author maxy
  **/
@@ -27,6 +28,7 @@ public class DelayTaskServiceImpl implements DelayTaskService {
     @Resource
     private NettyClientHelper nettyClientHelper;
 
+    @SneakyThrows
     @Override
     public boolean send(List<DelayTask> delayTasks) {
         validate(delayTasks);
@@ -35,12 +37,14 @@ public class DelayTaskServiceImpl implements DelayTaskService {
             log.error("send#无法获取channel信息.");
             return false;
         }
+        ChannelFuture channelFuture = null;
         if (!channel.isWritable()) {
             log.error("send#超过水位线无法发送服务端信息.");
-            return false;
+            channelFuture = channel.writeAndFlush(ProtocolMsg.toEntity(delayTasks)).sync();
+        }else {
+            channelFuture = channel.writeAndFlush(ProtocolMsg.toEntity(delayTasks));
         }
-        channel.writeAndFlush(ProtocolMsg.toEntity(delayTasks), getMonitor(channel));
-        log.info("delayTask任务发送:{}!!", channel);
+        CallerUtils.monitor(channelFuture);
         return true;
     }
 

@@ -24,6 +24,7 @@ import com.maxy.caller.pojo.RegConfigInfo;
 import io.netty.channel.Channel;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
@@ -94,6 +95,8 @@ public class NettyServerHelper {
             log.info("registryEvent#接受客户端启动注册信息:{}", regConfigInfo);
             activeChannel.put(regConfigInfo.getUniqName(), channel);
             ipChannelMapping.put(parse(channel), channel);
+            //去掉不活跃的
+            removeNotActive(regConfigInfo.getUniqName());
             //保存register
             TaskRegistryBO taskRegistryBO = new TaskRegistryBO();
             BeanUtils.copyProperties(regConfigInfo, taskRegistryBO);
@@ -111,21 +114,7 @@ public class NettyServerHelper {
         eventMap.put(MsgTypeEnum.PINGER, (protocolMsg, channel) -> {
             Pinger pinger = (Pinger) getRequest(protocolMsg);
             channel.writeAndFlush(ProtocolMsg.toEntity("服务端收到客户端的心跳消息!"));
-            List<Channel> channels = activeChannel.get(pinger.getUniqueName());
-            //去掉不活跃的
-            List<Channel> collection = Lists.newArrayList();
-            channels.removeIf(socketChannel -> {
-                if (!socketChannel.isActive()) {
-                    collection.add(socketChannel);
-                    ipChannelMapping.remove(parse(socketChannel));
-                    log.warn("IP:[{}]被移除!!!", parse(socketChannel));
-                    List<String> keys = Splitter.on(":").splitToList(pinger.getUniqueName());
-                    taskRegistryService.deleteByNotActive(keys.get(0), keys.get(1), parse(channel.remoteAddress()));
-                    return true;
-                }
-                return false;
-            });
-            activeChannel.values().removeAll(collection);
+            removeNotActive(pinger.getUniqueName());
         });
         return this;
     };
@@ -165,6 +154,28 @@ public class NettyServerHelper {
         Object request = protocolMsg.getBody();
         Preconditions.checkArgument(Objects.nonNull(request));
         return request;
+    }
+
+
+    private void removeNotActive(String UniqueName) {
+        //去掉不活跃的
+        List<Channel> collection = Lists.newArrayList();
+        List<Channel> channels = activeChannel.get(UniqueName);
+        if(CollectionUtils.isEmpty(channels)){
+            return;
+        }
+        channels.removeIf(socketChannel -> {
+            if (!socketChannel.isActive()) {
+                collection.add(socketChannel);
+                ipChannelMapping.remove(parse(socketChannel));
+                log.warn("IP:[{}]被移除!!!", parse(socketChannel));
+                List<String> keys = Splitter.on(":").splitToList(UniqueName);
+                taskRegistryService.deleteByNotActive(keys.get(0), keys.get(1), parse(socketChannel.remoteAddress()));
+                return true;
+            }
+            return false;
+        });
+        activeChannel.values().removeAll(collection);
     }
 
 }

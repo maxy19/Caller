@@ -1,6 +1,9 @@
 package com.maxy.caller.core.utils;
 
+import com.maxy.caller.pojo.Value;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelProgressiveFuture;
 import io.netty.channel.ChannelProgressiveFutureListener;
 import io.netty.channel.ChannelProgressivePromise;
@@ -55,7 +58,7 @@ public class CallerUtils {
     }
 
     public static List<String> parse(final List<Channel> channels) {
-        return channels.stream().map(CallerUtils::parse).collect(Collectors.toList());
+        return channels.stream().filter(Channel::isActive).map(CallerUtils::parse).collect(Collectors.toList());
     }
 
     public static String parse(SocketAddress socketAddress) {
@@ -143,7 +146,7 @@ public class CallerUtils {
     }
 
 
-    public static ChannelProgressivePromise getMonitor(Channel channel) {
+    public static ChannelProgressivePromise monitor(Channel channel) {
         ChannelProgressivePromise monitor = channel.newProgressivePromise();
         monitor.addListener(new ChannelProgressiveFutureListener() {
             @Override
@@ -157,6 +160,17 @@ public class CallerUtils {
             }
         });
         return monitor;
+    }
+
+    public static boolean monitor(ChannelFuture channelFuture) {
+        Value<Boolean> result = new Value<>(true);
+        channelFuture.addListener((ChannelFutureListener) future -> {
+            if (!future.isSuccess()) {
+                log.error("消息发送失败!!!!");
+                result.setValue(false);
+            }
+        });
+        return result.getValue();
     }
 
 
