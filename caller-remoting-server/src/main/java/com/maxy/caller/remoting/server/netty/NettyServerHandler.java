@@ -37,7 +37,7 @@ public class NettyServerHandler extends ChannelDuplexHandler {
 
     @PostConstruct
     public void initialize() {
-        nettServerHelper.pingerEvent.get();
+        nettServerHelper.heartbeatEvent.get();
         nettServerHelper.registryEvent.get();
         nettServerHelper.resultEvent.get();
         nettServerHelper.delayTaskEvent.get();

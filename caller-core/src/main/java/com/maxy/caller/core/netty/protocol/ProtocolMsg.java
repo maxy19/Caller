@@ -81,10 +81,10 @@ public class ProtocolMsg<T> {
      * @return
      */
     public static ProtocolMsg toEntity(Long timeMillis, String uniqName) {
-        ProtocolMsg<Pinger> protocolMsg = new ProtocolMsg<>(MsgTypeEnum.PINGER);
+        ProtocolMsg<Pinger> protocolMsg = new ProtocolMsg<>(MsgTypeEnum.HEARTBEAT);
         Pinger pinger = Pinger.builder().requestTime(timeMillis).uniqueName(uniqName).build();
         //set header
-        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(pinger, MsgTypeEnum.PINGER));
+        protocolMsg.setProtocolHeader(ProtocolHeader.toEntity(pinger, MsgTypeEnum.HEARTBEAT));
         //set body
         protocolMsg.setBody(pinger);
         //reqId

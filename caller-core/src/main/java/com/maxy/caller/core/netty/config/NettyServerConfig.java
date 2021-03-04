@@ -13,7 +13,7 @@ public class NettyServerConfig {
 
     private int serverPort = 8888;
     private int serverWorkerThreads = 8;
-    private int serverSelectorThreads = Runtime.getRuntime().availableProcessors();
+    private int serverSelectorThreads = 2 * Runtime.getRuntime().availableProcessors();
     private int serverChannelMaxIdleTimeSeconds = 120;
     private int serverSocketSndBufSize = 1024 * 1024;
     private int serverSocketRcvBufSize = 1024 * 1024;
@@ -21,5 +21,5 @@ public class NettyServerConfig {
     private boolean serverPooledByteBufAllocatorEnable = true;
     private boolean useEpollNativeSelector = false;
     private int defaultLowWaterMark = 32 * 1024;
-    private int defaultHighWaterMark = 64 * 1024;
+    private int defaultHighWaterMark = 100 * 1024 * 1024;
 }

@@ -81,7 +81,7 @@ public class NettyServerHelper {
      */ {
         eventMap.put(MsgTypeEnum.MESSAGE, (protocolMsg, channel) -> {
             String msg = (String) getRequest(protocolMsg);
-            log.info("服务端收到消息:{}", msg);
+            log.info("消息:{}", msg);
         });
     }
 
@@ -92,7 +92,6 @@ public class NettyServerHelper {
         eventMap.put(MsgTypeEnum.REGISTRY, (protocolMsg, channel) -> {
             RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
             RegConfigInfo regConfigInfo = request.getRegConfigInfo();
-            log.info("registryEvent#接受客户端启动注册信息:{}", regConfigInfo);
             activeChannel.put(regConfigInfo.getUniqName(), channel);
             ipChannelMapping.put(parse(channel), channel);
             //去掉不活跃的
@@ -102,7 +101,7 @@ public class NettyServerHelper {
             BeanUtils.copyProperties(regConfigInfo, taskRegistryBO);
             taskRegistryBO.setRegistryAddress(parse(channel));
             taskRegistryService.save(taskRegistryBO);
-            channel.writeAndFlush(ProtocolMsg.toEntity("服务端收到客户端:[" + parse(channel) + "]的注册信息！"));
+            log.info("registryEvent#服务端与客户端:{}建立连接!!", parse(channel));
         });
         return this;
     };
@@ -110,8 +109,8 @@ public class NettyServerHelper {
     /**
      * 服务端解析客户端事件
      */
-    public Supplier<NettyServerHelper> pingerEvent = () -> {
-        eventMap.put(MsgTypeEnum.PINGER, (protocolMsg, channel) -> {
+    public Supplier<NettyServerHelper> heartbeatEvent = () -> {
+        eventMap.put(MsgTypeEnum.HEARTBEAT, (protocolMsg, channel) -> {
             Pinger pinger = (Pinger) getRequest(protocolMsg);
             channel.writeAndFlush(ProtocolMsg.toEntity("服务端收到客户端的心跳消息!"));
             removeNotActive(pinger.getUniqueName());
@@ -161,14 +160,14 @@ public class NettyServerHelper {
         //去掉不活跃的
         List<Channel> collection = Lists.newArrayList();
         List<Channel> channels = activeChannel.get(UniqueName);
-        if(CollectionUtils.isEmpty(channels)){
+        if (CollectionUtils.isEmpty(channels)) {
             return;
         }
         channels.removeIf(socketChannel -> {
             if (!socketChannel.isActive()) {
                 collection.add(socketChannel);
                 ipChannelMapping.remove(parse(socketChannel));
-                log.warn("IP:[{}]被移除!!!", parse(socketChannel));
+                log.warn("IP:{}被移除!!!", parse(socketChannel));
                 List<String> keys = Splitter.on(":").splitToList(UniqueName);
                 taskRegistryService.deleteByNotActive(keys.get(0), keys.get(1), parse(socketChannel.remoteAddress()));
                 return true;

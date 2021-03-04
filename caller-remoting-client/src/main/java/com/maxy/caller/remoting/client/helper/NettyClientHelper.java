@@ -44,7 +44,7 @@ public class NettyClientHelper {
      */ {
         eventMap.put(MsgTypeEnum.MESSAGE, (protocolMsg, channel) -> {
             String msg = (String) getRequest(protocolMsg);
-            log.info("客户端收到消息:{},远程地址:{}", msg, parse(channel));
+            log.info("消息:{},远程地址:{}", msg, parse(channel));
             return this;
         });
     }

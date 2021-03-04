@@ -34,7 +34,7 @@ public class TaskDetailInfoTest {
             taskDetailInfoBO.setBizKey("order");
             taskDetailInfoBO.setTopic("clsExpireOrder");
             taskDetailInfoBO.setExecutionParam("test1");
-            taskDetailInfoBO.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 2, ChronoUnit.SECONDS));
+            taskDetailInfoBO.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 10, ChronoUnit.SECONDS));
             taskDetailInfoBO.setExecutionStatus((byte) 1);
             taskDetailInfoBO.setTimeout(2000);
             taskDetailInfoBO.setRetryNum((byte) 3);

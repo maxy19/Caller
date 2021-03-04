@@ -175,7 +175,7 @@ public class NettyServer extends AbstractNettyRemoting {
         ChannelFuture cf = null;
         try {
             cf = bootstrap.bind().sync();
-            log.info("Caller服务端启动完毕!!! 服务器地址:{}.端口:{}", inetSocketAddress.getAddress(), inetSocketAddress.getPort());
+            log.info("Caller服务端地址:{}.端口:{}启动完毕!!!", inetSocketAddress.getAddress(), inetSocketAddress.getPort());
             //对关闭通道进行监听
             cf.channel().closeFuture().sync();
         } catch (Exception e) {

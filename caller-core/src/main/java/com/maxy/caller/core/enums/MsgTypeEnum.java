@@ -7,7 +7,7 @@ public enum MsgTypeEnum {
     /**
      * 心跳事件
      */
-    PINGER((byte) 1),
+    HEARTBEAT((byte) 1),
     /**
      * 消息事件
      */
