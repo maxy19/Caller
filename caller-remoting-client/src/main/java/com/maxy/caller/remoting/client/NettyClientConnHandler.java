@@ -21,7 +21,6 @@ import javax.annotation.Resource;
 import java.net.SocketAddress;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
 
 import static com.maxy.caller.core.utils.CallerUtils.parse;
 
@@ -100,18 +99,6 @@ public class NettyClientConnHandler extends ChannelDuplexHandler {
         log.error("客户端发现异常!!.", cause);
     }
 
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof ProtocolMsg) {
-            ProtocolMsg protocolMsg = (ProtocolMsg) msg;
-            log.info("客户端读取信息:{}", protocolMsg);
-            BiFunction<ProtocolMsg, Channel, Object> consumer = nettyClientHelper.getEventMap().get(protocolMsg.getMsgTypeEnum());
-            if (consumer != null) {
-                consumer.apply(protocolMsg, ctx.channel());
-            }
-        }
-    }
-
     @SneakyThrows
     private void ping(Channel channel) {
         if (channel.isActive()) {
@@ -121,7 +108,6 @@ public class NettyClientConnHandler extends ChannelDuplexHandler {
             channel.closeFuture();
         }
     }
-
 
     @Override
     public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
@@ -142,9 +128,10 @@ public class NettyClientConnHandler extends ChannelDuplexHandler {
         ChannelFuture future = nettyClient.getBootstrap().connect(channel.remoteAddress());
         future.addListener((ChannelFutureListener) futureListener -> {
             if (futureListener.isSuccess()) {
-                log.info("客户端连接服务端:{}成功!!!", parse(channel.remoteAddress()));
+                log.info("客户端重连服务端:{}成功!!!", parse(channel.remoteAddress()));
+                return;
             } else {
-                log.info("客户端连接服务端失败!!稍后将重试连接:{}!!!", parse(channel.remoteAddress()));
+                log.info("客户端重连服务端失败!!稍后将重试连接:{}!!!", parse(channel.remoteAddress()));
                 futureListener.channel().eventLoop().schedule(new Runnable() {
                     @Override
                     public void run() {
