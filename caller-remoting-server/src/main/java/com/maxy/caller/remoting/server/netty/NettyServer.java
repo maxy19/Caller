@@ -89,7 +89,7 @@ public class NettyServer extends AbstractNettyRemoting {
 
             @Override
             public Thread newThread(Runnable r) {
-                return new Thread(r, String.format("caller-netty-server-nio-selector_%d_%d", threadTotal, this.threadIndex.incrementAndGet()));
+                return new Thread(r, String.format("caller-netty-nio-selector_%d_%d", threadTotal, this.threadIndex.incrementAndGet()));
             }
         });
     }
@@ -113,7 +113,7 @@ public class NettyServer extends AbstractNettyRemoting {
 
             @Override
             public Thread newThread(Runnable r) {
-                return new Thread(r, String.format("caller-netty-server-epoll-selector_%d_%d", threadTotal, this.threadIndex.incrementAndGet()));
+                return new Thread(r, String.format("caller-netty-epoll-selector_%d_%d", threadTotal, this.threadIndex.incrementAndGet()));
             }
         });
     }
