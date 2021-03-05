@@ -86,10 +86,10 @@ public class TriggerWorker implements AdminWorker {
     private NettyServerHelper nettyServerHelper;
     private ThreadPoolConfig threadPoolConfig = ThreadPoolConfig.getInstance();
     private ExecutorService worker = threadPoolConfig.getSingleThreadExecutor(true);
-    private ExecutorService backupWorker = threadPoolConfig.getSingleThreadExecutor(true);
-    private ExecutorService executorSchedule = threadPoolConfig.getPublicThreadPoolExecutor(INVOKE_CLIENT_TASK_THREAD_POOL);
+    private ExecutorService backupWorker = threadPoolConfig.getSingleThreadExecutor(false);
+    private ExecutorService executorSchedule = threadPoolConfig.getPublicThreadPoolExecutor(false, INVOKE_CLIENT_TASK_THREAD_POOL);
     private CacheTimer cacheTimer = CacheTimer.getInstance();
-    private ExecutorService retryExecutor = threadPoolConfig.getPublicThreadPoolExecutor(RETRY_TASK_THREAD_POOL);
+    private ExecutorService retryExecutor = threadPoolConfig.getPublicThreadPoolExecutor(false, RETRY_TASK_THREAD_POOL);
     private volatile boolean toggle = true;
 
     @PostConstruct
@@ -297,7 +297,8 @@ public class TriggerWorker implements AdminWorker {
         try {
             REQUEST_MAP.put(request.getRequestId(), rpcFuture);
             Stopwatch stopwatch = Stopwatch.createStarted();
-            handleCallback.accept(rpcFuture.getPromise().get(rpcFuture.getTimeout(), TimeUnit.MILLISECONDS), channel);
+            ProtocolMsg protocolMsg = rpcFuture.getPromise().get(rpcFuture.getTimeout(), TimeUnit.MILLISECONDS);
+            handleCallback.accept(protocolMsg, channel);
             log.info("syncCallback:任务ID:{},耗时:{}", callerTaskDTO.getDetailTaskId(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             value.setValue(false);
@@ -353,7 +354,7 @@ public class TriggerWorker implements AdminWorker {
     @Override
     public void stop() {
         toggle = false;
-        ThreadPoolRegisterCenter.destroy(backupWorker, worker, executorSchedule);
+        ThreadPoolRegisterCenter.destroy(backupWorker, retryExecutor, executorSchedule, worker);
     }
 
 }

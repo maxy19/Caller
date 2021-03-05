@@ -42,6 +42,8 @@ public class NettyClient extends AbstractNettyRemoting {
     private NettyClientConfig nettyClientConfig;
     @Resource
     private NettyClientHandler nettyClientHandler;
+    @Resource
+    private NettyClientConnHandler nettyClientConnHandler;
 
     private Bootstrap bootstrap;
 
@@ -70,12 +72,12 @@ public class NettyClient extends AbstractNettyRemoting {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline()
-                                .addLast(defaultEventExecutorGroup, new IdleStateHandler(0, 0, nettyClientConfig.getClientChannelMaxIdleTimeSeconds(), TimeUnit.SECONDS))
-                                //加码
-                                .addLast(defaultEventExecutorGroup, "encoder", new KryoEncode())
-                                //解码
-                                .addLast(defaultEventExecutorGroup, "decoder", new KryoDecode())
-                                .addLast(defaultEventExecutorGroup, nettyClientHandler);
+                                .addLast(defaultEventExecutorGroup,
+                                        new KryoEncode(),
+                                        new KryoDecode(),
+                                        new IdleStateHandler(0, 0, nettyClientConfig.getClientChannelMaxIdleTimeSeconds(), TimeUnit.SECONDS),
+                                        nettyClientConnHandler,
+                                        nettyClientHandler);
 
                     }
                 });

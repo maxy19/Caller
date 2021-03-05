@@ -42,6 +42,8 @@ public class NettyServer extends AbstractNettyRemoting {
     private NettyServerConfig nettyServerConfig;
     @Resource
     private NettyServerHandler nettyServerHandler;
+    @Resource
+    private NettyServerConnHandler nettyServerConnHandler;
     private EventLoopGroup eventLoopGroupSelector;
     private EventLoopGroup eventLoopGroupBoss;
     private InetSocketAddress inetSocketAddress;
@@ -158,18 +160,17 @@ public class NettyServer extends AbstractNettyRemoting {
                     protected void initChannel(Channel ch) throws Exception {
                         //心跳检测
                         ch.pipeline()
-                                .addLast(defaultEventExecutorGroup, new IdleStateHandler(0, 0, nettyServerConfig.getServerChannelMaxIdleTimeSeconds(), TimeUnit.SECONDS))
-                                //加码
-                                .addLast(defaultEventExecutorGroup, "encoder", new KryoEncode())
-                                //解码
-                                .addLast(defaultEventExecutorGroup, "decoder", new KryoDecode())
-                                //自定义处理
-                                .addLast(defaultEventExecutorGroup, nettyServerHandler);
+                                .addLast(defaultEventExecutorGroup,
+                                        new KryoEncode(),
+                                        new KryoDecode(),
+                                        new IdleStateHandler(0, 0, nettyServerConfig.getServerChannelMaxIdleTimeSeconds(), TimeUnit.SECONDS),
+                                        nettyServerConnHandler,
+                                        nettyServerHandler);
                     }
                 });
 
         if (nettyServerConfig.isServerPooledByteBufAllocatorEnable()) {
-            bootstrap.childOption(ChannelOption.ALLOCATOR, new PooledByteBufAllocator(true));
+            bootstrap.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
         }
 
         ChannelFuture cf = null;
