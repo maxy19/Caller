@@ -21,5 +21,5 @@ public class NettyClientConfig {
     private boolean clientPooledByteBufAllocatorEnable = false;
     private boolean clientCloseSocketIfTimeout = false;
     private int defaultLowWaterMark = 32 * 1024;
-    private int defaultHighWaterMark = 64 * 1024 * 1024;
+    private int defaultHighWaterMark = 64 * 1024;
 }
