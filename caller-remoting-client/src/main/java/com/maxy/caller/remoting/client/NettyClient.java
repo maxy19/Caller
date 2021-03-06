@@ -105,7 +105,7 @@ public class NettyClient extends AbstractNettyRemoting {
     private boolean connection(CountDownLatch countDownLatch, Bootstrap bootstrap, RegConfigInfo.AddressInfo addressInfo) {
         Value<Boolean> flag = new Value<>(true);
         try {
-            ChannelFuture cf = bootstrap.connect(addressInfo.getIp(), Integer.parseInt(addressInfo.getPort())).sync();
+            ChannelFuture cf = bootstrap.connect(addressInfo.getIp(), addressInfo.getPort()).sync();
             cf.addListener((ChannelFutureListener) channelFuture -> {
                 if (cf.isSuccess()) {
                     log.info("Caller客户端链接服务器地址:{},端口:{}成功!", addressInfo.getIp(), addressInfo.getPort());

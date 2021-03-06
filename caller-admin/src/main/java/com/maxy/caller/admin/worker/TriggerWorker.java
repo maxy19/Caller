@@ -318,10 +318,10 @@ public class TriggerWorker implements AdminWorker {
     @SneakyThrows
     private boolean send(Channel channel, Value<Boolean> value, ProtocolMsg request) {
         ChannelFuture channelFuture = null;
-        if (!CallerUtils.isChannelWritable(channel)) {
-            channelFuture = channel.writeAndFlush(request).sync();
-        } else {
+        if (CallerUtils.isChannelWritable(channel)) {
             channelFuture = channel.writeAndFlush(request);
+        } else {
+            channelFuture = channel.writeAndFlush(request).sync();
         }
         value.setValue(CallerUtils.monitor(channelFuture));
         return value.getValue();

@@ -36,7 +36,7 @@ public class RegConfigInfo {
     @AllArgsConstructor
     public static class AddressInfo {
         private String ip;
-        private String port;
+        private Integer port;
     }
 
     public List<AddressInfo> getAddressInfos() {
@@ -45,7 +45,7 @@ public class RegConfigInfo {
         return remoteAddress.stream().map(address -> {
             List<String> ipAndPort = Splitter.on(":").splitToList(address);
             Preconditions.checkArgument(ipAndPort.size() == 2,"缺少地址信息!!");
-            return new AddressInfo(ipAndPort.get(0), ipAndPort.get(1));
+            return new AddressInfo(ipAndPort.get(0), Integer.parseInt(ipAndPort.get(1)));
         }).collect(Collectors.toList());
     }
 

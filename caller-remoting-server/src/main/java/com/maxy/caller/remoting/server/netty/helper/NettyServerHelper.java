@@ -101,7 +101,7 @@ public class NettyServerHelper {
             BeanUtils.copyProperties(regConfigInfo, taskRegistryBO);
             taskRegistryBO.setRegistryAddress(parse(channel));
             taskRegistryService.save(taskRegistryBO);
-            log.info("registryEvent#服务端与客户端:{}建立连接!!", parse(channel));
+            log.info("registryEvent#服务端:{} 与 客户端:{} 建立连接!!", parse(channel.localAddress()), parse(channel));
         });
         return this;
     };
@@ -156,10 +156,10 @@ public class NettyServerHelper {
     }
 
 
-    private void removeNotActive(String UniqueName) {
+    private void removeNotActive(String uniqueName) {
         //去掉不活跃的
         List<Channel> collection = Lists.newArrayList();
-        List<Channel> channels = activeChannel.get(UniqueName);
+        List<Channel> channels = activeChannel.get(uniqueName);
         if (CollectionUtils.isEmpty(channels)) {
             return;
         }
@@ -168,7 +168,7 @@ public class NettyServerHelper {
                 collection.add(socketChannel);
                 ipChannelMapping.remove(parse(socketChannel));
                 log.warn("IP:{}被移除!!!", parse(socketChannel));
-                List<String> keys = Splitter.on(":").splitToList(UniqueName);
+                List<String> keys = Splitter.on(":").splitToList(uniqueName);
                 taskRegistryService.deleteByNotActive(keys.get(0), keys.get(1), parse(socketChannel.remoteAddress()));
                 return true;
             }

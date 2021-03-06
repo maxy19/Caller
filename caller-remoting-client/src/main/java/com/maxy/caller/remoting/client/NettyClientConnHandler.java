@@ -125,13 +125,14 @@ public class NettyClientConnHandler extends ChannelDuplexHandler {
         if (channel != null && channel.isActive()) {
             return;
         }
-        ChannelFuture future = nettyClient.getBootstrap().connect(channel.remoteAddress());
+        RegConfigInfo.AddressInfo info = regConfigInfo.getAddressInfos().stream().findFirst().get();
+        ChannelFuture future = nettyClient.getBootstrap().connect(info.getIp(), info.getPort());
         future.addListener((ChannelFutureListener) futureListener -> {
             if (futureListener.isSuccess()) {
-                log.info("客户端重连服务端:{}成功!!!", parse(channel.remoteAddress()));
+                log.info("客户端重连服务端:{}:{} 成功!!!", info.getIp(), info.getPort());
                 return;
             } else {
-                log.info("客户端重连服务端失败!!稍后将重试连接:{}!!!", parse(channel.remoteAddress()));
+                log.info("客户端重连服务端失败!!稍后将重试连接:{}:{}!!!", info.getIp(), info.getPort());
                 futureListener.channel().eventLoop().schedule(new Runnable() {
                     @Override
                     public void run() {

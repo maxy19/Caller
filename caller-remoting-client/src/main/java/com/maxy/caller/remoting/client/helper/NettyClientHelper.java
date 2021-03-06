@@ -57,7 +57,7 @@ public class NettyClientHelper {
             Stopwatch stopwatch = Stopwatch.createStarted();
             RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
             CallerTaskDTO callerTaskDTO = request.getCallerTaskDTO();
-            log.info("callerTaskEvent#callerTaskDTO:{}", callerTaskDTO);
+            log.info("callerTaskEvent#任务ID:{}", callerTaskDTO.getDetailTaskId());
             MethodModel methodModel = DispatchCenter.get(callerTaskDTO.getUniqueKey());
             Method method = methodModel.getMethod();
             method.setAccessible(true);
