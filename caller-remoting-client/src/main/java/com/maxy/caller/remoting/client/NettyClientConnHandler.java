@@ -132,7 +132,7 @@ public class NettyClientConnHandler extends ChannelDuplexHandler {
                 log.info("客户端重连服务端:{}:{} 成功!!!", info.getIp(), info.getPort());
                 return;
             } else {
-                log.info("客户端重连服务端失败!!稍后将重试连接:{}:{}!!!", info.getIp(), info.getPort());
+                log.info("客户端重连服务端地址: {}:{} 失败!!稍后将重试连接!!!", info.getIp(), info.getPort());
                 futureListener.channel().eventLoop().schedule(new Runnable() {
                     @Override
                     public void run() {
