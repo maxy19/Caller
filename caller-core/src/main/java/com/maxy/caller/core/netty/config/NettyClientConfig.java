@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 public class NettyClientConfig {
 
     private int serverPort = 8888;
-    private int clientWorkerThreads = 4;
+    private int clientWorkerThreads = Runtime.getRuntime().availableProcessors();
     private int clientCallbackExecutorThreads = Runtime.getRuntime().availableProcessors();
     private int connectTimeoutMillis = 3000;
     private long channelNotActiveInterval = 1000 * 60;

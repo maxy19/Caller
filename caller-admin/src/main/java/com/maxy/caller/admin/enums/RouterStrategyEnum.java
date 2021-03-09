@@ -19,10 +19,10 @@ public enum RouterStrategyEnum {
 
 
     ROUND((byte) 1, ((addresses) -> {
-        AtomicInteger index = new RoundRobinHelper().getIndex();//索引：指定开始位置
+        AtomicInteger index = RoundRobinHelper.index;//索引：指定开始位置
         String address = Strings.EMPTY;
         for (int i = 0; i < addresses.size(); i++) {
-            int nextIndex = index.incrementAndGet() % addresses.size();
+            int nextIndex = index.getAndIncrement() % addresses.size();
             index = new AtomicInteger(nextIndex);
             address = addresses.get(index.get());
             if (index.get() == addresses.size()) {
@@ -98,7 +98,7 @@ class RouterStrategyHelper {
 
 @Data
 class RoundRobinHelper {
-    private AtomicInteger index = new AtomicInteger(-1);
+    public static AtomicInteger index = new AtomicInteger(0);
 }
 
 

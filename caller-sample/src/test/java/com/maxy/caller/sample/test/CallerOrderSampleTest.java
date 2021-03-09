@@ -33,13 +33,13 @@ public class CallerOrderSampleTest {
     public void sendTask() throws Exception {
         List<DelayTask> list = new ArrayList<>();
         DelayTask delayTask = null;
-        for (int i = 0; i <2; i++) {
+        for (int i = 0; i <10; i++) {
             delayTask = new DelayTask();
             delayTask.setGroupKey("taobao");
             delayTask.setBizKey("order");
             delayTask.setTopic("clsExpireOrder");
             delayTask.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(),5,ChronoUnit.SECONDS));
-            delayTask.setExecutionParam("触发成功!!");
+            delayTask.setExecutionParam("触发成功!!"+i);
             delayTask.setTimeout(4000);
             delayTask.setRetryNum((byte) 1);
             list.add(delayTask);
