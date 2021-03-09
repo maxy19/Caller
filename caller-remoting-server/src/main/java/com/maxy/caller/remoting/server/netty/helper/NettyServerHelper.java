@@ -101,7 +101,7 @@ public class NettyServerHelper {
             BeanUtils.copyProperties(regConfigInfo, taskRegistryBO);
             taskRegistryBO.setRegistryAddress(parse(channel));
             taskRegistryService.save(taskRegistryBO);
-            log.info("registryEvent#服务端:{} 与 客户端:{} 建立连接!!", parse(channel.localAddress()), parse(channel));
+            channel.writeAndFlush(ProtocolMsg.toEntity(regConfigInfo.getUniqName()+"注册成功!"));
         });
         return this;
     };

@@ -3,7 +3,6 @@ package com.maxy.caller.admin.cache;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.JedisCluster;
-import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Tuple;
 
 import javax.annotation.Resource;
@@ -24,10 +23,6 @@ public class CacheService {
 
     @Resource(name = "callerRedisCluster")
     private JedisCluster jedisCluster;
-
-    public Map<String, JedisPool> getNodeMap() {
-        return jedisCluster.getClusterNodes();
-    }
 
     public int getMasterNodeSize() {
         return jedisCluster.getClusterNodes().size() / 2;

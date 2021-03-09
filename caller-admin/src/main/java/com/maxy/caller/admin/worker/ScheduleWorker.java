@@ -105,7 +105,7 @@ public class ScheduleWorker implements AdminWorker {
                 return;
             }
             log.info("push#预读:小于[{}]的所有任务,数据量为:{}", endDate, preReadInfoList.size());
-            addZSetQueue(preReadInfoList, cacheService.getMasterNodeSize());
+            addZSetQueue(preReadInfoList, config.getTags().size());
             //更改状态为执行中
             taskDetailInfoService.updateStatusByIds(preReadInfoList.stream().map(TaskDetailInfoBO::getId).collect(Collectors.toList()), ONLINE.getCode(), READY.getCode());
             //释放DB锁

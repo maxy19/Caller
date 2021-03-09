@@ -95,7 +95,7 @@ public class TriggerWorker implements AdminWorker {
     @PostConstruct
     public void init() {
         backupWorker.execute(() -> {
-            int size = cacheService.getMasterNodeSize();
+            int size = config.getTags().size();
             for (int i = 0; i < size; i++) {
                 List<String> keys = Lists.newArrayList(LIST_QUEUE_FORMAT_BACKUP.join(config.getTags().get(i)));
                 List<String> tasks = cacheService.getQueueDataByBackup(keys, ImmutableList.of(config.getLimitNum()));
@@ -125,7 +125,7 @@ public class TriggerWorker implements AdminWorker {
     private void pop() {
         try {
             //获取索引列表
-            for (int index = 0, length = cacheService.getMasterNodeSize(); index < length; index++) {
+            for (int index = 0, length = config.getTags().size(); index < length; index++) {
                 Integer slot = config.getTags().get(index);
                 List<Object> queueData = getQueueData(slot);
                 if (CollectionUtils.isEmpty(queueData)) {
@@ -302,7 +302,7 @@ public class TriggerWorker implements AdminWorker {
             log.info("syncCallback:任务ID:{},耗时:{}", callerTaskDTO.getDetailTaskId(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             value.setValue(false);
-            log.error("syncCallback#调用方法超时或者遇到异常！参数:{}", callerTaskDTO, e);
+            log.error("syncCallback#调用方法超时或者遇到异常!! 任务ID:{}", callerTaskDTO.getDetailTaskId(), e);
         }
         return value.getValue();
     }

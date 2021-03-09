@@ -52,7 +52,7 @@ public class NettyServerConnHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        log.debug("channelActive#channel准备就绪.客户端地址:{}", ctx.channel().remoteAddress());
+        log.debug("channelActive#服务端:{} 与 客户端:{} 建立连接!!", parse(ctx.channel().localAddress()), parse(ctx.channel()));
         super.channelActive(ctx);
     }
 
