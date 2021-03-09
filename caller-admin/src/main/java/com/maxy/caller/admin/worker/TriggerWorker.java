@@ -51,6 +51,7 @@ import java.util.function.BiConsumer;
 import static com.maxy.caller.admin.enums.RouterStrategyEnum.router;
 import static com.maxy.caller.core.common.RpcHolder.REQUEST_MAP;
 import static com.maxy.caller.core.constant.ThreadConstant.INVOKE_CLIENT_TASK_THREAD_POOL;
+import static com.maxy.caller.core.constant.ThreadConstant.POP_LOOP_SLOT_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.RETRY_TASK_THREAD_POOL;
 import static com.maxy.caller.core.enums.ExceptionEnum.FOUND_NOT_EXECUTE_INFO;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
@@ -90,6 +91,7 @@ public class TriggerWorker implements AdminWorker {
     private ExecutorService executorSchedule = threadPoolConfig.getPublicThreadPoolExecutor(false, INVOKE_CLIENT_TASK_THREAD_POOL);
     private CacheTimer cacheTimer = CacheTimer.getInstance();
     private ExecutorService retryExecutor = threadPoolConfig.getPublicThreadPoolExecutor(false, RETRY_TASK_THREAD_POOL);
+    private ExecutorService loopSlotExecutor = threadPoolConfig.getPublicThreadPoolExecutor(false, POP_LOOP_SLOT_THREAD_POOL);
     private volatile boolean toggle = true;
 
     @PostConstruct
@@ -126,14 +128,16 @@ public class TriggerWorker implements AdminWorker {
         try {
             //获取索引列表
             for (int index = 0, length = config.getTags().size(); index < length; index++) {
-                Integer slot = config.getTags().get(index);
-                List<Object> queueData = getQueueData(slot);
-                if (CollectionUtils.isEmpty(queueData)) {
-                    continue;
-                }
-                //循环执行
-                log.info("找到数据!!,槽位:{}", slot);
-                invokeAll(queueData);
+                Value<Integer> indexValue = new Value<>(index);
+                loopSlotExecutor.execute(() -> {
+                    Integer slot = config.getTags().get(indexValue.getValue());
+                    List<Object> queueData = getQueueData(slot);
+                    if(CollectionUtils.isNotEmpty(queueData)){
+                        //循环执行
+                        log.info("找到数据!!,槽位:{}", slot);
+                        invokeAll(queueData);
+                    }
+                });
             }
         } catch (Exception e) {
             log.error("pop#执行出队时发现异常!!", e);
