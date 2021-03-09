@@ -26,7 +26,7 @@ public class CallerOrderSample implements DelayHandler {
     @Override
     @Registered(topic = "clsExpireOrder")
     public ResultDTO execute(String param) throws Exception {
-        log.info("clsExpireOrder:参数：{},时间：{}", param, DateUtils.formatDateTime(new Date()));
+        log.info("clsExpireOrder:参数：{},时间：{}", param, DateUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"));
         return ResultDTO.getSuccessResponse();
     }
 
