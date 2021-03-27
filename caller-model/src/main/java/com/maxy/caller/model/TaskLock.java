@@ -3,6 +3,9 @@ package com.maxy.caller.model;
 import com.maxy.caller.common.utils.JSONUtils;
 import lombok.Data;
 
+/**
+ * @author maxy
+ */
 @Data
 public class TaskLock {
     /**

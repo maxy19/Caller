@@ -6,6 +6,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.ReadTimeoutException;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Component;
@@ -106,6 +107,9 @@ public class NettyServerConnHandler extends ChannelDuplexHandler {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        if(cause instanceof ReadTimeoutException){
+           ctx.fireExceptionCaught(cause);
+        }
         log.error("close#服务端发现异常.", cause);
     }
 

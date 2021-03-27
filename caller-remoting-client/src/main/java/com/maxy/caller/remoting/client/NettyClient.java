@@ -18,6 +18,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
@@ -76,6 +77,7 @@ public class NettyClient extends AbstractNettyRemoting {
                                         new KryoEncode(),
                                         new KryoDecode(),
                                         new IdleStateHandler(0, 0, nettyClientConfig.getClientChannelMaxIdleTimeSeconds(), TimeUnit.SECONDS),
+                                        new ReadTimeoutHandler(3 * nettyClientConfig.getClientChannelMaxIdleTimeSeconds()),
                                         nettyClientConnHandler,
                                         nettyClientHandler);
 

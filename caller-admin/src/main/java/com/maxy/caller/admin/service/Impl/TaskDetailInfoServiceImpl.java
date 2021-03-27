@@ -98,7 +98,7 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
         TaskDetailInfoExample example = new TaskDetailInfoExample();
         example.createCriteria().andExecutionStatusEqualTo(status)
                 .andExecutionTimeLessThanOrEqualTo(endTime);
-        example.setOrderByClause("execution_time asc limit 0," + limitValue);
+        example.setOrderByClause("limit 0," + limitValue);
         List<TaskDetailInfo> taskDetailInfos = taskDetailInfoExtendMapper.selectByExample(example);
         return BeanCopyUtils.copyListProperties(taskDetailInfos, TaskDetailInfoBO::new);
     }
