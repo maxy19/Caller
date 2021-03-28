@@ -69,7 +69,7 @@ public class ScheduleWorker implements AdminWorker {
                     //入队
                     push();
                     //(打散时间防止极端情况都抢锁)
-                    TimeUnit.MILLISECONDS.sleep(10 * RandomUtils.nextInt(1, 100));
+                    TimeUnit.MILLISECONDS.sleep(1000);
                 } catch (Exception e) {
                     log.error("加入队列定时出现异常！！", e);
                 }

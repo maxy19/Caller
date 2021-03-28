@@ -14,13 +14,13 @@ import java.util.List;
 @Data
 public class AdminConfigCenter {
 
-    @Value("${caller.admin.limit.num:500}")
+    @Value("${caller.admin.limit.num:5000}")
     private String limitNum;
 
     @Value("${caller.admin.limit.num:10}")
     private String indexLimitNum;
 
-    @Value("${caller.admin.pre.read:100}")
+    @Value("${caller.admin.pre.read:1000}")
     private String preReadLimit;
 
     @Value("${caller.admin.push.cycle:60}")
