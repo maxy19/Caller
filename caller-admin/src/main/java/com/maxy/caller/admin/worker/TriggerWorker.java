@@ -236,6 +236,10 @@ public class TriggerWorker implements AdminWorker {
             }
             //获取channel
             Channel channel = getChannel(context.getRight(), channels);
+            if(Objects.isNull(channel)){
+               log.error("remoteClientMethod#根据{}没有找到要发送的通道,请检查客户端是否存在!",context.getRight());
+               return;
+            }
             boolean result = syncCallback(context.getRight(), channel);
             //发现异常如果需要重试将再次调用方法
             if (!result) {

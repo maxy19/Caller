@@ -12,6 +12,8 @@ import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.bo.TaskRegistryBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
 import com.maxy.caller.core.common.RpcFuture;
+import com.maxy.caller.core.config.ThreadPoolConfig;
+import com.maxy.caller.core.config.ThreadPoolRegisterCenter;
 import com.maxy.caller.core.enums.MsgTypeEnum;
 import com.maxy.caller.core.netty.pojo.Pinger;
 import com.maxy.caller.core.netty.protocol.ProtocolMsg;
@@ -28,16 +30,21 @@ import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import static com.maxy.caller.core.common.RpcHolder.REQUEST_MAP;
+import static com.maxy.caller.core.constant.ThreadConstant.SERVER_HEART_RESP_THREAD_POOL;
+import static com.maxy.caller.core.constant.ThreadConstant.SERVER_SAVE_DELAY_TASK_THREAD_POOL;
+import static com.maxy.caller.core.constant.ThreadConstant.SERVER_SAVE_REG_THREAD_POOL;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.ONLINE;
 import static com.maxy.caller.core.utils.CallerUtils.parse;
 
@@ -76,6 +83,13 @@ public class NettyServerHelper {
      */
     private Map<MsgTypeEnum, BiConsumer<ProtocolMsg, Channel>> eventMap = new ConcurrentHashMap();
 
+
+    private ExecutorService saveRegExecutor = ThreadPoolConfig.getInstance().getSingleThreadExecutor(false, SERVER_SAVE_REG_THREAD_POOL);
+
+    private ExecutorService heartRespExecutor = ThreadPoolConfig.getInstance().getSingleThreadExecutor(false, SERVER_HEART_RESP_THREAD_POOL);
+
+    private ExecutorService saveDelayTaskExecutor = ThreadPoolConfig.getInstance().getPublicThreadPoolExecutor(false, SERVER_SAVE_DELAY_TASK_THREAD_POOL);
+
     /**
      * 服务端客户端共有事件
      */ {
@@ -90,18 +104,20 @@ public class NettyServerHelper {
      */
     public Supplier<NettyServerHelper> registryEvent = () -> {
         eventMap.put(MsgTypeEnum.REGISTRY, (protocolMsg, channel) -> {
-            RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
-            RegConfigInfo regConfigInfo = request.getRegConfigInfo();
-            activeChannel.put(regConfigInfo.getUniqName(), channel);
-            ipChannelMapping.put(parse(channel), channel);
-            //去掉不活跃的
-            removeNotActive(regConfigInfo.getUniqName());
-            //保存register
-            TaskRegistryBO taskRegistryBO = new TaskRegistryBO();
-            BeanUtils.copyProperties(regConfigInfo, taskRegistryBO);
-            taskRegistryBO.setRegistryAddress(parse(channel));
-            taskRegistryService.save(taskRegistryBO);
-            channel.writeAndFlush(ProtocolMsg.toEntity(regConfigInfo.getUniqName()+"注册成功!"));
+            saveRegExecutor.execute(() -> {
+                RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
+                RegConfigInfo regConfigInfo = request.getRegConfigInfo();
+                activeChannel.put(regConfigInfo.getUniqName(), channel);
+                ipChannelMapping.put(parse(channel), channel);
+                //去掉不活跃的
+                removeNotActive(regConfigInfo.getUniqName());
+                //保存register
+                TaskRegistryBO taskRegistryBO = new TaskRegistryBO();
+                BeanUtils.copyProperties(regConfigInfo, taskRegistryBO);
+                taskRegistryBO.setRegistryAddress(parse(channel));
+                taskRegistryService.save(taskRegistryBO);
+                channel.writeAndFlush(ProtocolMsg.toEntity(regConfigInfo.getUniqName() + "注册成功!"));
+            });
         });
         return this;
     };
@@ -111,9 +127,11 @@ public class NettyServerHelper {
      */
     public Supplier<NettyServerHelper> heartbeatEvent = () -> {
         eventMap.put(MsgTypeEnum.HEARTBEAT, (protocolMsg, channel) -> {
-            Pinger pinger = (Pinger) getRequest(protocolMsg);
-            channel.writeAndFlush(ProtocolMsg.toEntity("服务端收到客户端的心跳消息!"));
-            removeNotActive(pinger.getUniqueName());
+            heartRespExecutor.execute(() -> {
+                Pinger pinger = (Pinger) getRequest(protocolMsg);
+                channel.writeAndFlush(ProtocolMsg.toEntity("服务端收到客户端的心跳消息!"));
+                removeNotActive(pinger.getUniqueName());
+            });
         });
         return this;
     };
@@ -140,11 +158,13 @@ public class NettyServerHelper {
      */
     public Supplier<NettyServerHelper> delayTaskEvent = () -> {
         eventMap.put(MsgTypeEnum.DELAYTASK, (protocolMsg, channel) -> {
-            RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
-            log.info("delayTaskEvent#接受客户端添加延迟任务:{}", request.getDelayTasks());
-            List<TaskDetailInfoBO> taskDetailInfoBOList = BeanCopyUtils.copyListProperties(request.getDelayTasks(), TaskDetailInfoBO::new);
-            taskDetailInfoService.batchInsert(taskDetailInfoBOList);
-            taskLogService.batchInsert(taskDetailInfoBOList, ONLINE.getCode(), parse(channel));
+            saveDelayTaskExecutor.execute(() -> {
+                RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
+                log.info("delayTaskEvent#接受客户端添加延迟任务:{}", request.getDelayTasks());
+                List<TaskDetailInfoBO> taskDetailInfoBOList = BeanCopyUtils.copyListProperties(request.getDelayTasks(), TaskDetailInfoBO::new);
+                taskDetailInfoService.batchInsert(taskDetailInfoBOList);
+                taskLogService.batchInsert(taskDetailInfoBOList, ONLINE.getCode(), parse(channel));
+            });
         });
         return this;
     };
@@ -175,6 +195,11 @@ public class NettyServerHelper {
             return false;
         });
         activeChannel.values().removeAll(collection);
+    }
+
+    @PreDestroy
+    public void stop() {
+        ThreadPoolRegisterCenter.destroy(heartRespExecutor, saveDelayTaskExecutor, saveRegExecutor);
     }
 
 }
