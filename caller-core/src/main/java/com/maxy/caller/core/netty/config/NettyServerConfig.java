@@ -21,5 +21,5 @@ public class NettyServerConfig {
     private boolean serverPooledByteBufAllocatorEnable = true;
     private boolean useEpollNativeSelector = false;
     private int defaultLowWaterMark = 32 * 1024;
-    private int defaultHighWaterMark = 64 * 1024;
+    private int defaultHighWaterMark = 64 * 1024 * 1024;
 }

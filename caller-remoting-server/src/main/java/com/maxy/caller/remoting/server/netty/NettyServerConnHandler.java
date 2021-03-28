@@ -53,13 +53,13 @@ public class NettyServerConnHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        log.debug("channelActive#服务端:{} 与 客户端:{} 建立连接!!", parse(ctx.channel().localAddress()), parse(ctx.channel()));
+        log.info("channelActive#服务端:{} 与 客户端:{} 建立连接!!", parse(ctx.channel().localAddress()), parse(ctx.channel()));
         super.channelActive(ctx);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.debug("channelInactive#channel断开连接.客户端地址:{}", ctx.channel().remoteAddress());
+        log.info("channelInactive#channel断开连接.客户端地址:{}", ctx.channel().remoteAddress());
         super.channelInactive(ctx);
     }
 

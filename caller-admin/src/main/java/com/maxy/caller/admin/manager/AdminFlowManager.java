@@ -44,7 +44,7 @@ public class AdminFlowManager implements SmartInitializingSingleton, AdminWorker
         workerList.add(SpringContextUtils.getBean(LogCleanWorker.class));
         workerList.add(SpringContextUtils.getBean(RegistryWorker.class));
         //启动组件
-        start();
+        //start();
     }
 
 

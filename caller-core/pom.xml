@@ -72,6 +72,10 @@
             <groupId>com.eatthepath</groupId>
             <artifactId>fast-uuid</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>kryo-shaded</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

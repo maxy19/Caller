@@ -10,6 +10,7 @@ public interface ThreadConstant {
        String SERVER_SAVE_REG_THREAD_POOL = "server-save-reg-thread-pool";
        String SERVER_HEART_RESP_THREAD_POOL = "server-heart-resp-thread-pool";
        String SERVER_SAVE_DELAY_TASK_THREAD_POOL = "server-save-delay-task-thread-pool";
+       String SERVER_RESP_RESULT_THREAD_POOL = "server-resp-result-thread-pool";
        String POP_LOOP_SLOT_THREAD_POOL = "pop-loop-slot-thread-pool";
        String CLIENT_INVOKE_METHOD_THREAD_POOL = "client-invoke-method-thread-pool";
        String CLIENT_HANDLE_THREAD_POOL = "caller-netty-client-handle-thread-%d";

@@ -28,7 +28,6 @@ public class KryoDecode extends LengthFieldBasedFrameDecoder {
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
-        Object deserialize = KryoSerializer.deserialize(in);
-        return deserialize;
+        return DefaultKryoContext.get().deserialze(in);
     }
 }

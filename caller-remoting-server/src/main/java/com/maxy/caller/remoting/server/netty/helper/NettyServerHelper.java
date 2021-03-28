@@ -43,6 +43,7 @@ import java.util.function.Supplier;
 
 import static com.maxy.caller.core.common.RpcHolder.REQUEST_MAP;
 import static com.maxy.caller.core.constant.ThreadConstant.SERVER_HEART_RESP_THREAD_POOL;
+import static com.maxy.caller.core.constant.ThreadConstant.SERVER_RESP_RESULT_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.SERVER_SAVE_DELAY_TASK_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.SERVER_SAVE_REG_THREAD_POOL;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.ONLINE;
@@ -89,6 +90,7 @@ public class NettyServerHelper {
     private ExecutorService heartRespExecutor = ThreadPoolConfig.getInstance().getSingleThreadExecutor(false, SERVER_HEART_RESP_THREAD_POOL);
 
     private ExecutorService saveDelayTaskExecutor = ThreadPoolConfig.getInstance().getPublicThreadPoolExecutor(false, SERVER_SAVE_DELAY_TASK_THREAD_POOL);
+    private ExecutorService respResultExecutor = ThreadPoolConfig.getInstance().getPublicThreadPoolExecutor(false, SERVER_RESP_RESULT_THREAD_POOL);
 
     /**
      * 服务端客户端共有事件
@@ -142,13 +144,15 @@ public class NettyServerHelper {
      */
     public Supplier<NettyServerHelper> resultEvent = () -> {
         eventMap.put(MsgTypeEnum.RESULT, (protocolMsg, channel) -> {
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            log.info("resultEvent#执行客户端方法返回值:{}", protocolMsg);
-            RpcFuture<ProtocolMsg> rpcFuture = REQUEST_MAP.get(protocolMsg.getRequestId());
-            Preconditions.checkArgument(rpcFuture != null, "通过reqId没有找到对应的future信息..");
-            rpcFuture.getPromise().setSuccess(protocolMsg);
-            REQUEST_MAP.remove(protocolMsg.getRequestId());
-            log.info("resultEvent:耗时:reqId:{},{}", protocolMsg.getRequestId(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
+            respResultExecutor.execute(() -> {
+                Stopwatch stopwatch = Stopwatch.createStarted();
+                log.info("resultEvent#执行客户端方法返回值:{}", protocolMsg);
+                RpcFuture<ProtocolMsg> rpcFuture = REQUEST_MAP.get(protocolMsg.getRequestId());
+                Preconditions.checkArgument(rpcFuture != null, "通过reqId没有找到对应的future信息..");
+                rpcFuture.getPromise().setSuccess(protocolMsg);
+                REQUEST_MAP.remove(protocolMsg.getRequestId());
+                log.info("resultEvent:耗时:reqId:{},{}", protocolMsg.getRequestId(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
+            });
         });
         return this;
     };
@@ -160,7 +164,7 @@ public class NettyServerHelper {
         eventMap.put(MsgTypeEnum.DELAYTASK, (protocolMsg, channel) -> {
             saveDelayTaskExecutor.execute(() -> {
                 RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
-                log.info("delayTaskEvent#接受客户端添加延迟任务:{}", request.getDelayTasks());
+                log.debug("delayTaskEvent#接受客户端添加延迟任务:{}", request.getDelayTasks());
                 List<TaskDetailInfoBO> taskDetailInfoBOList = BeanCopyUtils.copyListProperties(request.getDelayTasks(), TaskDetailInfoBO::new);
                 taskDetailInfoService.batchInsert(taskDetailInfoBOList);
                 taskLogService.batchInsert(taskDetailInfoBOList, ONLINE.getCode(), parse(channel));
