@@ -18,6 +18,8 @@ public interface TaskDetailInfoService extends CommonService {
 
     Boolean update(TaskDetailInfoBO taskDetailInfoBO);
 
+    Boolean updateStatus(Long id, Byte status);
+
     Boolean delete(Long taskInfoId);
 
     TaskDetailInfoBO getByInfoId(Long taskInfoId);

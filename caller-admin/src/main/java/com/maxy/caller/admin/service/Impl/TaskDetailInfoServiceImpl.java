@@ -8,6 +8,7 @@ import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
 import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.common.utils.JSONUtils;
+import com.maxy.caller.core.enums.ExecutionStatusEnum;
 import com.maxy.caller.core.service.TaskDetailInfoService;
 import com.maxy.caller.model.TaskDetailInfo;
 import com.maxy.caller.model.TaskGroup;
@@ -81,6 +82,18 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     }
 
     @Override
+    public Boolean updateStatus(Long id, Byte status) {
+        TaskDetailInfoBO taskDetailInfoBO = getByInfoId(id);
+        if(!ExecutionStatusEnum.isFinalState(taskDetailInfoBO.getExecutionStatus())){
+            taskDetailInfoBO.setExecutionStatus(status);
+            return false;
+        }
+        TaskDetailInfo taskDetailInfo = new TaskDetailInfo();
+        BeanCopyUtils.copy(taskDetailInfoBO, taskDetailInfo);
+        return taskDetailInfoExtendMapper.updateByPrimaryKeySelective(taskDetailInfo) > 0;
+    }
+
+    @Override
     public Boolean delete(Long taskDetailInfoId) {
         return taskDetailInfoExtendMapper.deleteByPrimaryKey(taskDetailInfoId) > 0;
     }
@@ -125,6 +138,6 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     public boolean removeBackup(TaskDetailInfoBO taskDetailInfoBO) {
         long time = taskDetailInfoBO.getExecutionTime().getTime();
         String key = LIST_QUEUE_FORMAT_BACKUP.join(config.getTags().get((int) mod(time, config.getTags().size())));
-        return cacheService.lrem(key, JSONUtils.toJSONString(taskDetailInfoBO)) > 0 ;
+        return cacheService.lrem(key, JSONUtils.toJSONString(taskDetailInfoBO)) > 0;
     }
 }

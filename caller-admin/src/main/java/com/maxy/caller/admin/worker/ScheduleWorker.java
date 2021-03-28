@@ -142,7 +142,7 @@ public class ScheduleWorker implements AdminWorker {
      * @param time
      */
     private void cacheDetailTaskInfo(TaskDetailInfoBO taskDetailInfoBO, long time) {
-        long remainingTime = TimeUnit.MILLISECONDS.toSeconds(time - System.currentTimeMillis()) + TimeUnit.MILLISECONDS.toMillis(RandomUtils.nextInt(100, 150));
+        long remainingTime = TimeUnit.MILLISECONDS.toSeconds(time - System.currentTimeMillis()) + TimeUnit.MINUTES.toMillis(RandomUtils.nextInt(5, 15));
         //单个detail信息
         if (remainingTime - ONE_SECOND > 0) {
             cacheService.set(DETAIL_TASK_INFO.join(taskDetailInfoBO.getId()), (int) remainingTime, JSONUtils.toJSONString(taskDetailInfoBO));

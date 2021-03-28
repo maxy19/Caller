@@ -58,7 +58,6 @@ import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_FAILED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXECUTION_SUCCEED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.EXPIRED;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.RETRYING;
-import static com.maxy.caller.core.enums.ExecutionStatusEnum.isFinalState;
 import static com.maxy.caller.core.enums.GenerateKeyEnum.DETAIL_TASK_INFO;
 import static com.maxy.caller.core.enums.GenerateKeyEnum.LIST_QUEUE_FORMAT_BACKUP;
 import static com.maxy.caller.core.enums.GenerateKeyEnum.ZSET_QUEUE_FORMAT;
@@ -167,13 +166,9 @@ public class TriggerWorker implements AdminWorker {
         if (taskDetailInfoBO.getExecutionTime().getTime() <= System.currentTimeMillis()) {
             log.warn("checkExpireTaskInfo#[{}]任务,时间:[{}]已过期将丢弃.", getUniqueName(taskDetailInfoBO), taskDetailInfoBO.getExecutionTime());
             taskDetailInfoService.removeBackup(taskDetailInfoBO);
-            //如果是最终态则不用更新
-            if (isFinalState(taskDetailInfoBO.getExecutionStatus())) {
-                return true;
+            //更新为过期
+            if(taskDetailInfoService.updateStatus(taskDetailInfoBO.getId(), EXPIRED.getCode())) {                     taskLogService.save(taskDetailInfoBO);
             }
-            taskDetailInfoBO.setExecutionStatus(EXPIRED.getCode());
-            taskDetailInfoService.update(taskDetailInfoBO);
-            taskLogService.save(taskDetailInfoBO);
             return true;
         }
         return false;
