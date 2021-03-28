@@ -46,7 +46,7 @@ public class SampleController {
                 delayTaskService.send(Lists.newArrayList(delayTask));
             });
         }
-        es.awaitTermination(10, TimeUnit.SECONDS);
+        es.awaitTermination(1, TimeUnit.MINUTES);
         log.info("send finish.");
         return true;
     }
