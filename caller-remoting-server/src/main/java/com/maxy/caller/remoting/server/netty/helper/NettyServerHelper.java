@@ -8,13 +8,12 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimaps;
-import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.bo.TaskRegistryBO;
-import com.maxy.caller.common.utils.BeanCopyUtils;
 import com.maxy.caller.core.common.RpcFuture;
 import com.maxy.caller.core.config.ThreadPoolConfig;
 import com.maxy.caller.core.config.ThreadPoolRegisterCenter;
 import com.maxy.caller.core.enums.MsgTypeEnum;
+import com.maxy.caller.core.mpmc.RingbufferInvoker;
 import com.maxy.caller.core.netty.pojo.Pinger;
 import com.maxy.caller.core.netty.protocol.ProtocolMsg;
 import com.maxy.caller.core.service.TaskDetailInfoService;
@@ -46,7 +45,6 @@ import static com.maxy.caller.core.constant.ThreadConstant.SERVER_HEART_RESP_THR
 import static com.maxy.caller.core.constant.ThreadConstant.SERVER_RESP_RESULT_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.SERVER_SAVE_DELAY_TASK_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.SERVER_SAVE_REG_THREAD_POOL;
-import static com.maxy.caller.core.enums.ExecutionStatusEnum.ONLINE;
 import static com.maxy.caller.core.utils.CallerUtils.parse;
 
 /**
@@ -65,6 +63,8 @@ public class NettyServerHelper {
     private TaskLogService taskLogService;
     @Resource
     private TaskGroupService taskGroupService;
+    @Resource
+    private RingbufferInvoker ringbufferInvoker;
     /**
      * key:group+biz
      * value:channel
@@ -83,12 +83,8 @@ public class NettyServerHelper {
      * 各种事件处理器
      */
     private Map<MsgTypeEnum, BiConsumer<ProtocolMsg, Channel>> eventMap = new ConcurrentHashMap();
-
-
     private ExecutorService saveRegExecutor = ThreadPoolConfig.getInstance().getSingleThreadExecutor(false, SERVER_SAVE_REG_THREAD_POOL);
-
     private ExecutorService heartRespExecutor = ThreadPoolConfig.getInstance().getSingleThreadExecutor(false, SERVER_HEART_RESP_THREAD_POOL);
-
     private ExecutorService saveDelayTaskExecutor = ThreadPoolConfig.getInstance().getPublicThreadPoolExecutor(false, SERVER_SAVE_DELAY_TASK_THREAD_POOL);
     private ExecutorService respResultExecutor = ThreadPoolConfig.getInstance().getPublicThreadPoolExecutor(false, SERVER_RESP_RESULT_THREAD_POOL);
 
@@ -162,13 +158,9 @@ public class NettyServerHelper {
      */
     public Supplier<NettyServerHelper> delayTaskEvent = () -> {
         eventMap.put(MsgTypeEnum.DELAYTASK, (protocolMsg, channel) -> {
-            saveDelayTaskExecutor.execute(() -> {
-                RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
-                log.debug("delayTaskEvent#接受客户端添加延迟任务:{}", request.getDelayTasks());
-                List<TaskDetailInfoBO> taskDetailInfoBOList = BeanCopyUtils.copyListProperties(request.getDelayTasks(), TaskDetailInfoBO::new);
-                taskDetailInfoService.batchInsert(taskDetailInfoBOList);
-                taskLogService.batchInsert(taskDetailInfoBOList, ONLINE.getCode(), parse(channel));
-            });
+            RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
+            ringbufferInvoker.invoke(request.getDelayTasks());
+            log.debug("delayTaskEvent#接受客户端添加延迟任务:{}", request.getDelayTasks());
         });
         return this;
     };

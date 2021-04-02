@@ -7,6 +7,7 @@ public interface ThreadConstant {
 
        String INVOKE_CLIENT_TASK_THREAD_POOL = "invoke-client-method-thread-pool";
        String RETRY_TASK_THREAD_POOL = "retry-invoke-client-method-thread-pool";
+       String SERVER_RING_BUFFER_THREAD_POOL = "server-ring-buffer-thread-pool";
        String SERVER_SAVE_REG_THREAD_POOL = "server-save-reg-thread-pool";
        String SERVER_HEART_RESP_THREAD_POOL = "server-heart-resp-thread-pool";
        String SERVER_SAVE_DELAY_TASK_THREAD_POOL = "server-save-delay-task-thread-pool";

@@ -36,9 +36,6 @@ public class ProtocolMsg<T> {
         this.msgTypeEnum = msgTypeEnum;
     }
 
-    private ProtocolMsg() {
-    }
-
     /**
      * 初始化发送注册信息
      *
