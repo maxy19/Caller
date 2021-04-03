@@ -1,4 +1,4 @@
-package com.maxy.caller.core.mpmc;
+package com.maxy.caller.remoting.server.netty.mpmc;
 
 import com.lmax.disruptor.RingBuffer;
 import com.maxy.caller.pojo.DelayTask;
@@ -18,11 +18,12 @@ public class Producer {
         this.ringBuffer = ringBuffer;
     }
 
-    public void sendData(List<DelayTask> value) {
+    public void sendData(List<DelayTask> value,String address) {
         long sequence = ringBuffer.next();
         try {
-            Event<List<DelayTask>> listEvent = ringBuffer.get(sequence);
-            listEvent.setElement(value);
+            Event<List<DelayTask>> event = ringBuffer.get(sequence);
+            event.setElement(value);
+            event.setAddress(address);
         } finally {
             ringBuffer.publish(sequence);
         }

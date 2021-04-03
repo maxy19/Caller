@@ -13,15 +13,12 @@ import com.maxy.caller.core.common.RpcFuture;
 import com.maxy.caller.core.config.ThreadPoolConfig;
 import com.maxy.caller.core.config.ThreadPoolRegisterCenter;
 import com.maxy.caller.core.enums.MsgTypeEnum;
-import com.maxy.caller.core.mpmc.RingbufferInvoker;
 import com.maxy.caller.core.netty.pojo.Pinger;
 import com.maxy.caller.core.netty.protocol.ProtocolMsg;
-import com.maxy.caller.core.service.TaskDetailInfoService;
-import com.maxy.caller.core.service.TaskGroupService;
-import com.maxy.caller.core.service.TaskLogService;
 import com.maxy.caller.core.service.TaskRegistryService;
 import com.maxy.caller.dto.RpcRequestDTO;
 import com.maxy.caller.pojo.RegConfigInfo;
+import com.maxy.caller.remoting.server.netty.mpmc.RingbufferInvoker;
 import io.netty.channel.Channel;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
@@ -56,13 +53,7 @@ import static com.maxy.caller.core.utils.CallerUtils.parse;
 public class NettyServerHelper {
 
     @Resource
-    private TaskDetailInfoService taskDetailInfoService;
-    @Resource
     private TaskRegistryService taskRegistryService;
-    @Resource
-    private TaskLogService taskLogService;
-    @Resource
-    private TaskGroupService taskGroupService;
     @Resource
     private RingbufferInvoker ringbufferInvoker;
     /**
@@ -159,7 +150,7 @@ public class NettyServerHelper {
     public Supplier<NettyServerHelper> delayTaskEvent = () -> {
         eventMap.put(MsgTypeEnum.DELAYTASK, (protocolMsg, channel) -> {
             RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
-            ringbufferInvoker.invoke(request.getDelayTasks());
+            ringbufferInvoker.invoke(request.getDelayTasks(),parse(channel));
             log.debug("delayTaskEvent#接受客户端添加延迟任务:{}", request.getDelayTasks());
         });
         return this;

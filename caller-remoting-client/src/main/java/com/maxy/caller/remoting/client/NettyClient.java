@@ -38,7 +38,7 @@ import static com.maxy.caller.core.constant.ThreadConstant.CLIENT_HANDLE_THREAD_
 @Component
 public class NettyClient extends AbstractNettyRemoting {
 
-    EventLoopGroup eventExecutors = new NioEventLoopGroup();
+    private EventLoopGroup eventExecutors = new NioEventLoopGroup();
     @Resource
     private NettyClientConfig nettyClientConfig;
     @Resource

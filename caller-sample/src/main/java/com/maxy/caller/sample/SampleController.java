@@ -8,15 +8,11 @@ import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @Author maxuyang
@@ -30,24 +26,16 @@ public class SampleController {
 
     @SneakyThrows
     @GetMapping("/req")
-    public boolean req(@RequestParam Integer num) {
-        ExecutorService es = Executors.newFixedThreadPool(16);
-        log.info("param:{}", num);
-        for (int i = 0; i < num; i++) {
-            es.execute(() -> {
-                DelayTask delayTask = new DelayTask();
-                delayTask.setGroupKey("taobao");
-                delayTask.setBizKey("order");
-                delayTask.setTopic("clsExpireOrder");
-                delayTask.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 120, ChronoUnit.SECONDS));
-                delayTask.setExecutionParam("触发成功!!");
-                delayTask.setTimeout(2000);
-                delayTask.setRetryNum((byte) 1);
-                delayTaskService.send(Lists.newArrayList(delayTask));
-            });
-        }
-        es.awaitTermination(1, TimeUnit.MINUTES);
-        log.info("send finish.");
-        return true;
+    public String req() {
+        DelayTask delayTask = new DelayTask();
+        delayTask.setGroupKey("taobao");
+        delayTask.setBizKey("order");
+        delayTask.setTopic("clsExpireOrder");
+        delayTask.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 1, ChronoUnit.HOURS));
+        delayTask.setExecutionParam("触发成功!!");
+        delayTask.setTimeout(2000);
+        delayTask.setRetryNum((byte) 1);
+        boolean send = delayTaskService.send(Lists.newArrayList(delayTask));
+        return send+"_"+System.currentTimeMillis();
     }
 }
