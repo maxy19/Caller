@@ -160,8 +160,7 @@ public class NettyServer extends AbstractNettyRemoting {
                     @Override
                     protected void initChannel(Channel ch) throws Exception {
                         //心跳检测
-                        ch.pipeline()
-                                .addLast(defaultEventExecutorGroup,
+                        ch.pipeline().addLast(defaultEventExecutorGroup,
                                         new KryoEncode(),
                                         new KryoDecode(),
                                         new IdleStateHandler(0, 0, nettyServerConfig.getServerChannelMaxIdleTimeSeconds(), TimeUnit.SECONDS),

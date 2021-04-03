@@ -20,8 +20,8 @@ public class ThreadPoolConfig {
     }
 
     private static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
-    private static final int CORE_SIZE = PROCESSORS;
-    private static final int MAX_SIZE = CORE_SIZE * 2;
+    private static final int CORE_SIZE = PROCESSORS + 1;
+    private static final int MAX_SIZE = CORE_SIZE  * 2;
 
     private static final class InnerClass {
         private static ThreadPoolConfig INSTANCE = new ThreadPoolConfig();
@@ -94,7 +94,7 @@ public class ThreadPoolConfig {
      * @return
      */
     public ExecutorService getPublicThreadPoolExecutor(boolean isDaemon, String threadName) {
-        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(CORE_SIZE, MAX_SIZE, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000),
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(CORE_SIZE, MAX_SIZE, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(5000),
                 getThreadFactory(threadName, isDaemon),
                 (r, executor) -> {
                     log.warn("publicThreadExecutor#队列已经满员,正在调用拒绝策略!");

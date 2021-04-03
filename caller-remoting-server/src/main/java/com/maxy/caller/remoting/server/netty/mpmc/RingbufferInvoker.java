@@ -36,7 +36,7 @@ public class RingbufferInvoker {
 
     @PostConstruct
     public void init() {
-        producer = new Producer(create(1024 * 1024, getConsumers(10)));
+        producer = new Producer(create(1024 * 1024, getConsumers(30)));
     }
 
 
@@ -47,7 +47,7 @@ public class RingbufferInvoker {
     private Consumer[] getConsumers(int length) {
         Consumer[] consumers = new Consumer[length];
         for (int i = 0; i < consumers.length; i++) {
-            consumers[i] = new Consumer(taskDetailInfoService, taskLogService);
+            consumers[i] = new Consumer(taskDetailInfoService, taskLogService, "consumer_" + i);
         }
         return consumers;
     }
