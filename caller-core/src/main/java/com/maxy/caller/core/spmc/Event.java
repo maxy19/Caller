@@ -1,4 +1,4 @@
-package com.maxy.caller.remoting.server.netty.mpmc;
+package com.maxy.caller.core.spmc;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

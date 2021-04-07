@@ -1,4 +1,4 @@
-package com.maxy.caller.remoting.server.netty.mpmc;
+package com.maxy.caller.core.spmc;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.lmax.disruptor.RingBuffer;

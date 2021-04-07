@@ -1,4 +1,4 @@
-package com.maxy.caller.remoting.server.netty.mpmc;
+package com.maxy.caller.core.spmc;
 
 import com.lmax.disruptor.WorkHandler;
 import com.maxy.caller.bo.TaskDetailInfoBO;
