@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
+import static com.maxy.caller.core.constant.ThreadConstant.ADMIN_FLOW_THREAD_POOL;
+
 /**
  * admin流程管理器
  *
@@ -29,7 +31,7 @@ public class AdminFlowManager implements SmartInitializingSingleton, AdminWorker
     @Resource
     private NettyServer nettyServer;
 
-    private ExecutorService nettyStartService = ThreadPoolConfig.getInstance().getSingleThreadExecutor(true);
+    private ExecutorService nettyStartService = ThreadPoolConfig.getInstance().getSingleThreadExecutor(true, ADMIN_FLOW_THREAD_POOL);
 
     @Override
     public void afterSingletonsInstantiated() {
@@ -54,8 +56,8 @@ public class AdminFlowManager implements SmartInitializingSingleton, AdminWorker
        /* workerList.forEach(worker -> {
             worker.start();
         });*/
-       workerList.get(0).start();
-       workerList.get(1).start();
+        workerList.get(0).start();
+        workerList.get(1).start();
     }
 
     @Override

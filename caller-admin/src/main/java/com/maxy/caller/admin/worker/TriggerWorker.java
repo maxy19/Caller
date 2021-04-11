@@ -4,13 +4,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.maxy.caller.admin.cache.CacheService;
-import com.maxy.caller.admin.config.AdminConfigCenter;
 import com.maxy.caller.admin.service.AdminWorker;
 import com.maxy.caller.bo.TaskDetailInfoBO;
-import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.common.utils.JSONUtils;
+import com.maxy.caller.core.cache.CacheService;
 import com.maxy.caller.core.common.RpcFuture;
+import com.maxy.caller.core.config.GeneralConfigCenter;
 import com.maxy.caller.core.config.ThreadPoolConfig;
 import com.maxy.caller.core.config.ThreadPoolRegisterCenter;
 import com.maxy.caller.core.exception.BusinessException;
@@ -32,7 +31,6 @@ import io.netty.util.concurrent.DefaultPromise;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Component;
@@ -50,6 +48,8 @@ import java.util.function.BiConsumer;
 
 import static com.maxy.caller.admin.enums.RouterStrategyEnum.router;
 import static com.maxy.caller.core.common.RpcHolder.REQUEST_MAP;
+import static com.maxy.caller.core.constant.ThreadConstant.ADMIN_TRIGGER_BACKUP_WORKER_THREAD_POOL;
+import static com.maxy.caller.core.constant.ThreadConstant.ADMIN_TRIGGER_WORKER_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.INVOKE_CLIENT_TASK_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.POP_LOOP_SLOT_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.RETRY_TASK_THREAD_POOL;
@@ -81,24 +81,23 @@ public class TriggerWorker implements AdminWorker {
     @Resource
     private TaskLogService taskLogService;
     @Resource
-    private AdminConfigCenter config;
+    private GeneralConfigCenter config;
     @Resource
     private NettyServerHelper nettyServerHelper;
     private ThreadPoolConfig threadPoolConfig = ThreadPoolConfig.getInstance();
-    private ExecutorService worker = threadPoolConfig.getSingleThreadExecutor(true);
-    private ExecutorService backupWorker = threadPoolConfig.getSingleThreadExecutor(false);
+    private ExecutorService worker = threadPoolConfig.getSingleThreadExecutor(true, ADMIN_TRIGGER_WORKER_THREAD_POOL);
+    private ExecutorService backupWorker = threadPoolConfig.getSingleThreadExecutor(false, ADMIN_TRIGGER_BACKUP_WORKER_THREAD_POOL);
     private ExecutorService executorSchedule = threadPoolConfig.getPublicThreadPoolExecutor(false, INVOKE_CLIENT_TASK_THREAD_POOL);
-    private CacheTimer cacheTimer = CacheTimer.getInstance();
+    private CacheTimer cacheTimer = CacheTimer.getEntity();
     private ExecutorService retryExecutor = threadPoolConfig.getPublicThreadPoolExecutor(false, RETRY_TASK_THREAD_POOL);
-    private ExecutorService loopSlotExecutor = threadPoolConfig.getPublicThreadPoolExecutor(false, POP_LOOP_SLOT_THREAD_POOL);
+    private ExecutorService loopSlotExecutor = threadPoolConfig.getPublicThreadPoolExecutor(true, POP_LOOP_SLOT_THREAD_POOL);
     private volatile boolean toggle = true;
 
     @PostConstruct
     public void init() {
         backupWorker.execute(() -> {
-            int size = config.getTags().size();
-            for (int i = 0; i < size; i++) {
-                List<String> keys = Lists.newArrayList(LIST_QUEUE_FORMAT_BACKUP.join(config.getTags().get(i)));
+            for (int slot = 0, length = config.getTotalSlot(); slot < length; slot++) {
+                List<String> keys = Lists.newArrayList(LIST_QUEUE_FORMAT_BACKUP.join(slot));
                 List<String> tasks = cacheService.getQueueDataByBackup(keys, ImmutableList.of(config.getLimitNum()));
                 if (CollectionUtils.isEmpty(tasks)) {
                     continue;
@@ -115,7 +114,7 @@ public class TriggerWorker implements AdminWorker {
                 try {
                     pop();
                     //打散时间
-                    TimeUnit.MILLISECONDS.sleep(10 * RandomUtils.nextInt(1, 100));
+                    TimeUnit.MILLISECONDS.sleep(1000);
                 } catch (Exception e) {
                     log.error("队列获取数据出现异常", e);
                 }
@@ -126,16 +125,10 @@ public class TriggerWorker implements AdminWorker {
     private void pop() {
         try {
             //获取索引列表
-            for (int index = 0, length = config.getTags().size(); index < length; index++) {
-                Value<Integer> indexValue = new Value<>(index);
+            for (int slot = 0, length = 2; slot < length; slot++) {
+                Value<Integer> indexValue = new Value<>(slot);
                 loopSlotExecutor.execute(() -> {
-                    Integer slot = config.getTags().get(indexValue.getValue());
-                    List<Object> queueData = getQueueData(slot);
-                    if(CollectionUtils.isNotEmpty(queueData)){
-                        //循环执行
-                        log.info("找到数据!!,槽位:{}", slot);
-                        invokeAll(queueData);
-                    }
+                    getAndInvokeAll(indexValue.getValue());
                 });
             }
         } catch (Exception e) {
@@ -149,10 +142,22 @@ public class TriggerWorker implements AdminWorker {
      * @param slot
      * @return
      */
-    private List<Object> getQueueData(int slot) {
-        List<String> keys = Lists.newArrayList(ZSET_QUEUE_FORMAT.join(slot), LIST_QUEUE_FORMAT_BACKUP.join(slot));
-        List<String> args = Arrays.asList("-inf", String.valueOf(DateUtils.addSecond(config.getPopCycleTime()).getTime()), "LIMIT", "0", config.getLimitNum());
-        return cacheService.getQueueData(keys, args);
+    private void getAndInvokeAll(int slot) {
+        int result;
+        do {
+            result = 0;
+            List<String> keys = Lists.newArrayList(ZSET_QUEUE_FORMAT.join(slot), LIST_QUEUE_FORMAT_BACKUP.join(slot));
+            Long now = System.currentTimeMillis();
+            String start = String.valueOf(now - config.getPopCycleTime());
+            String end = String.valueOf(now + config.getPopCycleTime());
+            List<String> args = Arrays.asList(start, end, "LIMIT", "0", config.getLimitNum());
+            List<Object> queueData = cacheService.getQueueData(keys, args);
+            if (CollectionUtils.isNotEmpty(queueData)) {
+                log.info("找到数据!!,槽位:{}.", queueData);
+                invokeAll(queueData);
+            }
+            result += queueData.size();
+        } while (result > 0);
     }
 
     /**
@@ -167,7 +172,8 @@ public class TriggerWorker implements AdminWorker {
             log.warn("checkExpireTaskInfo#[{}]任务,时间:[{}]已过期将丢弃.", getUniqueName(taskDetailInfoBO), taskDetailInfoBO.getExecutionTime());
             taskDetailInfoService.removeBackup(taskDetailInfoBO);
             //更新为过期
-            if(taskDetailInfoService.updateStatus(taskDetailInfoBO.getId(), EXPIRED.getCode())) {                     taskLogService.save(taskDetailInfoBO);
+            if (taskDetailInfoService.updateStatus(taskDetailInfoBO.getId(), EXPIRED.getCode())) {
+                taskLogService.save(taskDetailInfoBO);
             }
             return true;
         }
@@ -231,9 +237,9 @@ public class TriggerWorker implements AdminWorker {
             }
             //获取channel
             Channel channel = getChannel(context.getRight(), channels);
-            if(Objects.isNull(channel)){
-               log.error("remoteClientMethod#根据{}没有找到要发送的通道,请检查客户端是否存在!",context.getRight());
-               return;
+            if (Objects.isNull(channel)) {
+                log.error("remoteClientMethod#根据{}没有找到要发送的通道,请检查客户端是否存在!", context.getRight());
+                return;
             }
             boolean result = syncCallback(context.getRight(), channel);
             //发现异常如果需要重试将再次调用方法

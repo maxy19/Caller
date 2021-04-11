@@ -89,7 +89,7 @@
                 #{taskDetailInfo.topic,jdbcType=VARCHAR},
                 #{taskDetailInfo.executionParam,jdbcType=VARCHAR},
                 #{taskDetailInfo.executionTime,jdbcType=TIMESTAMP},
-                1,
+                3,
                 #{taskDetailInfo.timeout,jdbcType=INTEGER},
                 #{taskDetailInfo.retryNum,jdbcType=TINYINT},
                 now(3),now(3)

@@ -5,15 +5,15 @@ import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.YieldingWaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
-import com.maxy.caller.core.service.TaskDetailInfoService;
-import com.maxy.caller.core.service.TaskLogService;
 import com.maxy.caller.pojo.DelayTask;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
 
@@ -24,19 +24,15 @@ import static com.maxy.caller.core.constant.ThreadConstant.SERVER_RING_BUFFER_TH
  */
 @Component
 @Log4j2
-public class RingbufferInvoker {
-
-    @Resource
-    private TaskDetailInfoService taskDetailInfoService;
-    @Resource
-    private TaskLogService taskLogService;
+public class RingbufferInvoker implements ApplicationContextAware {
 
     private Disruptor<Event<List<DelayTask>>> disruptor = null;
     private Producer producer = null;
+    private ApplicationContext context;
 
     @PostConstruct
     public void init() {
-        producer = new Producer(create(1024 * 1024, getConsumers(30)));
+        producer = new Producer(create(2048, getConsumers(20)));
     }
 
 
@@ -47,7 +43,7 @@ public class RingbufferInvoker {
     private Consumer[] getConsumers(int length) {
         Consumer[] consumers = new Consumer[length];
         for (int i = 0; i < consumers.length; i++) {
-            consumers[i] = new Consumer(taskDetailInfoService, taskLogService, "consumer_" + i);
+            consumers[i] = context.getBean(Consumer.class);
         }
         return consumers;
     }
@@ -66,5 +62,10 @@ public class RingbufferInvoker {
         if (disruptor != null) {
             disruptor.shutdown();
         }
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        context = applicationContext;
     }
 }

@@ -8,28 +8,27 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 单例获取hashedwheeltimer
  * @author maxy
  */
 public class CacheTimer {
     private HashedWheelTimer hashedWheelTimer;
-    private static class Instance {
-        private static CacheTimer cacheTimer = new CacheTimer();
-    }
-    private CacheTimer() {
+
+    public CacheTimer() {
         hashedWheelTimer = new HashedWheelTimer(new ThreadFactory() {
             AtomicInteger threadCount = new AtomicInteger();
             @Override
             public Thread newThread(Runnable runnable) {
                 Thread thread = new Thread(runnable);
                 thread.setDaemon(true);
+                thread.setPriority(Thread.NORM_PRIORITY + 3);
                 thread.setName("timer-wheel-thread-pool-" + threadCount.incrementAndGet());
                 return thread;
             }
         }, 100L, TimeUnit.MILLISECONDS, 512);
     }
-    public static CacheTimer getInstance() {
-        return Instance.cacheTimer;
+
+    public static CacheTimer getEntity() {
+        return new CacheTimer();
     }
 
     /**

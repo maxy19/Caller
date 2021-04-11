@@ -1,11 +1,11 @@
 package com.maxy.caller.admin.worker;
 
-import com.maxy.caller.admin.cache.CacheService;
-import com.maxy.caller.admin.config.AdminConfigCenter;
 import com.maxy.caller.admin.service.AdminWorker;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.common.utils.JSONUtils;
+import com.maxy.caller.core.cache.CacheService;
+import com.maxy.caller.core.config.GeneralConfigCenter;
 import com.maxy.caller.core.config.ThreadPoolConfig;
 import com.maxy.caller.core.config.ThreadPoolRegisterCenter;
 import com.maxy.caller.core.service.TaskDetailInfoService;
@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.maxy.caller.core.constant.ThreadConstant.ADMIN_SCHEDULE_WORKER_THREAD_POOL;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.ONLINE;
 import static com.maxy.caller.core.enums.ExecutionStatusEnum.READY;
 import static com.maxy.caller.core.enums.GenerateKeyEnum.DETAIL_TASK_INFO;
@@ -55,9 +56,9 @@ public class ScheduleWorker implements AdminWorker {
     @Resource
     private TransactionDefinition transactionDefinition;
 
-    private ExecutorService scheduleWorker = ThreadPoolConfig.getInstance().getSingleThreadExecutor(true);
+    private ExecutorService scheduleWorker = ThreadPoolConfig.getInstance().getSingleThreadExecutor(true,ADMIN_SCHEDULE_WORKER_THREAD_POOL);
     @Resource
-    private AdminConfigCenter config;
+    private GeneralConfigCenter config;
 
     private volatile boolean toggle = true;
 
@@ -105,7 +106,7 @@ public class ScheduleWorker implements AdminWorker {
                 return;
             }
             log.info("push#预读:小于[{}]的所有任务,数据量为:{}", endDate, preReadInfoList.size());
-            addZSetQueue(preReadInfoList, config.getTags().size());
+            addZSetQueue(preReadInfoList, config.getTotalSlot());
             //更改状态为执行中
             taskDetailInfoService.updateStatusByIds(preReadInfoList.stream().map(TaskDetailInfoBO::getId).collect(Collectors.toList()), ONLINE.getCode(), READY.getCode());
             //释放DB锁
@@ -122,27 +123,31 @@ public class ScheduleWorker implements AdminWorker {
             taskLogService.batchInsert(preReadInfoList, READY.getCode());
         }
     }
-
+    /**
+     * 添加zset队列
+     * @param preReadInfoList
+     * @param size
+     */
     private void addZSetQueue(List<TaskDetailInfoBO> preReadInfoList, int size) {
         preReadInfoList.forEach(taskDetailInfoBO -> {
             long time = taskDetailInfoBO.getExecutionTime().getTime();
             //消除bigKey则将队列通过{node-1}分片 打散映射
-            long index = mod(time, size);
-            Integer slot = config.getTags().get((int) index);
-            cacheDetailTaskInfo(taskDetailInfoBO, time);
+            long slot = mod(time, size);
             cacheService.zadd(ZSET_QUEUE_FORMAT.join(slot), (double) time, JSONUtils.toJSONString(taskDetailInfoBO));
+            cacheDetailTaskInfo(taskDetailInfoBO, time);
         });
     }
 
+
     /**
      * 缓存详情任务信息
-     * 过期时间 = 距离执行时间+执行时间(100-150随机值)避免相同时间同时过期
+     * 过期时间 = 距离执行时间+执行时间(10000-60000毫秒随机值)避免相同时间同时过期
      *
      * @param taskDetailInfoBO
      * @param time
      */
     private void cacheDetailTaskInfo(TaskDetailInfoBO taskDetailInfoBO, long time) {
-        long remainingTime = TimeUnit.MILLISECONDS.toSeconds(time - System.currentTimeMillis()) + TimeUnit.MINUTES.toMillis(RandomUtils.nextInt(5, 15));
+        long remainingTime = TimeUnit.MILLISECONDS.toSeconds(time - System.currentTimeMillis()) + TimeUnit.MILLISECONDS.toMillis(RandomUtils.nextInt(10000, 60000));
         //单个detail信息
         if (remainingTime - ONE_SECOND > 0) {
             cacheService.set(DETAIL_TASK_INFO.join(taskDetailInfoBO.getId()), (int) remainingTime, JSONUtils.toJSONString(taskDetailInfoBO));

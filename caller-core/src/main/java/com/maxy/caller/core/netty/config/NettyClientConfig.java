@@ -14,7 +14,6 @@ public class NettyClientConfig {
     private int clientWorkerThreads = Runtime.getRuntime().availableProcessors();
     private int clientCallbackExecutorThreads = Runtime.getRuntime().availableProcessors();
     private int connectTimeoutMillis = 3000;
-    private long channelNotActiveInterval = 1000 * 60;
     private int clientChannelMaxIdleTimeSeconds = 120;
     private int clientSocketSndBufSize = 1024 * 1024;
     private int clientSocketRcvBufSize = 1024 * 1024;

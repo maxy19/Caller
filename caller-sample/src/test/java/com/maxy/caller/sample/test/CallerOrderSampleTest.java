@@ -14,8 +14,8 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * CallerSample Tester.
@@ -31,26 +31,40 @@ public class CallerOrderSampleTest {
     @Resource
     private DelayTaskService delayTaskService;
 
+    private AtomicInteger count = new AtomicInteger();
+    private CountDownLatch countDownLatch = new CountDownLatch(1);
+
     @Test
     public void sendTask() throws Exception {
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        int total = 4000;
         long start = System.currentTimeMillis();
-        for (int i = 0; i < 1000; i++) {
-            executorService.execute(() -> {
+        for (int i = 0; i < total; i++) {
+            count.incrementAndGet();
+            new Thread(() -> {
                 List<DelayTask> list = new ArrayList<>();
                 DelayTask delayTask = new DelayTask();
                 delayTask.setGroupKey("taobao");
                 delayTask.setBizKey("order");
                 delayTask.setTopic("clsExpireOrder");
-                delayTask.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 5, ChronoUnit.SECONDS));
+                delayTask.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 1, ChronoUnit.HOURS));
                 delayTask.setExecutionParam("触发成功!!");
                 delayTask.setTimeout(4000);
                 delayTask.setRetryNum((byte) 1);
                 list.add(delayTask);
+                try {
+                    countDownLatch.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 delayTaskService.send(list);
-            });
+            }).start();
         }
-        System.out.println(System.currentTimeMillis()-start+" ms");
+        while (count.get() == total){
+            Thread.sleep(10);
+            countDownLatch.countDown();
+            break;
+        }
+        System.out.println(System.currentTimeMillis() - start + " ms");
         System.in.read();
     }
 }

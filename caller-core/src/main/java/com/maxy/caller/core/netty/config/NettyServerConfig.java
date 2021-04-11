@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 public class NettyServerConfig {
 
     private int serverPort = 8888;
-    private int serverWorkerThreads = 8;
-    private int serverSelectorThreads = 2 * Runtime.getRuntime().availableProcessors();
+    private int serverWorkerThreads = 2 * Runtime.getRuntime().availableProcessors();
+    private int serverSelectorThreads =  Runtime.getRuntime().availableProcessors();
     private int serverChannelMaxIdleTimeSeconds = 120;
     private int serverSocketSndBufSize = 1024 * 1024;
     private int serverSocketRcvBufSize = 1024 * 1024;

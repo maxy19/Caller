@@ -12,6 +12,7 @@ import com.maxy.caller.pojo.RegConfigInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.logging.log4j.core.util.UuidUtil;
 
 import java.util.List;
@@ -25,6 +26,7 @@ import java.util.List;
 @Data
 @Builder
 @AllArgsConstructor
+@NoArgsConstructor
 public class ProtocolMsg<T> {
 
     private ProtocolHeader protocolHeader;

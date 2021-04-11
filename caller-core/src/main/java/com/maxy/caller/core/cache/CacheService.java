@@ -1,4 +1,4 @@
-package com.maxy.caller.admin.cache;
+package com.maxy.caller.core.cache;
 
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;

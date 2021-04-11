@@ -28,9 +28,14 @@ public interface CommonService {
     default String getUniqueName(TaskLogBO taskLogBO) {
         return String.join(":", taskLogBO.getGroupKey(), taskLogBO.getBizKey(), taskLogBO.getTopic());
     }
+
     default long mod(long time, int masterSize) {
         return time % masterSize;
     }
+
+    int PROCESSORS = Runtime.getRuntime().availableProcessors();
+    int CORE_SIZE = PROCESSORS * 2;
+    int MAX_SIZE = CORE_SIZE + CORE_SIZE / 2;
 
     String ALARM_EMAIL = "alarmEmail";
     String STRATEGY_VALUE = "strategyValue";
@@ -38,5 +43,8 @@ public interface CommonService {
     int ONE_MILLISECOND = 1;
     int ONE_SECOND = ONE_MILLISECOND * 1000;
     int ONE_HOUR = ONE_MINUTE * 60;
+    int ONE_DAY = ONE_HOUR * 24;
+    int THREE_DAY = 3 * ONE_HOUR * 24;
+    int SERVER_DAY = 7 * ONE_HOUR * 24;
 
 }

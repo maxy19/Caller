@@ -1,18 +1,15 @@
-package com.maxy.caller.admin.config;
+package com.maxy.caller.core.config;
 
-import com.google.common.collect.ImmutableList;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * @author maxy
  */
 @Component
 @Data
-public class AdminConfigCenter {
+public class GeneralConfigCenter {
 
     @Value("${caller.admin.limit.num:5000}")
     private String limitNum;
@@ -20,20 +17,14 @@ public class AdminConfigCenter {
     @Value("${caller.admin.limit.num:10}")
     private String indexLimitNum;
 
-    @Value("${caller.admin.pre.read:1000}")
+    @Value("${caller.admin.pre.read:20}")
     private String preReadLimit;
 
     @Value("${caller.admin.push.cycle:60}")
     private Integer pushCycleTime;
-    @Value("${caller.admin.pop.cycle:30}")
+    @Value("${caller.admin.pop.cycle:60}")
     private Integer popCycleTime;
 
-    /**
-     * hashTag
-     * value:0,slot:13907
-     * value:2,slot:5649
-     * value:3,slot:1584
-     */
-    @Value("#{'${caller.admin.hash.tag:0,2,3}'.split(',')}")
-    private List<Integer> tags = ImmutableList.of();
+    @Value("${caller.admin.max.slot:256}")
+    private Integer totalSlot;
 }

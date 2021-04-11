@@ -1,6 +1,7 @@
 package com.maxy.caller.core.config;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.maxy.caller.core.service.CommonService;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.concurrent.ExecutorService;
@@ -14,14 +15,10 @@ import java.util.concurrent.TimeUnit;
  * @Author maxy
  **/
 @Log4j2
-public class ThreadPoolConfig {
+public class ThreadPoolConfig implements CommonService {
 
     private ThreadPoolConfig() {
     }
-
-    private static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
-    private static final int CORE_SIZE = PROCESSORS + 1;
-    private static final int MAX_SIZE = CORE_SIZE  * 2;
 
     private static final class InnerClass {
         private static ThreadPoolConfig INSTANCE = new ThreadPoolConfig();
@@ -47,6 +44,10 @@ public class ThreadPoolConfig {
         return getPublicScheduledExecutor(corePoolSize, isDaemon, "public-scheduled-executor");
     }
 
+    public ScheduledThreadPoolExecutor getPublicScheduledExecutor(boolean isDaemon, String threadName) {
+        return getPublicScheduledExecutor(CORE_SIZE, isDaemon, threadName);
+    }
+
     public ExecutorService getSingleThreadExecutor(boolean isDaemon) {
         return getSingleThreadExecutor(true, "single-thread-pool-executor");
     }
@@ -64,7 +65,7 @@ public class ThreadPoolConfig {
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000),
                 getThreadFactory(threadName, isDaemon),
                 (r, executor) -> {
-                    log.warn("singleThreadExecutor#队列已经满员,正在调用拒绝策略!");
+                    log.warn(String.join("#", threadName, "队列已经满员,正在调用拒绝策略!"));
                     if (!executor.isShutdown()) {
                         r.run();
                     }
@@ -80,7 +81,7 @@ public class ThreadPoolConfig {
     public ScheduledThreadPoolExecutor getPublicScheduledExecutor(Integer corePoolSize, boolean isDaemon, String threadName) {
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(corePoolSize,
                 getThreadFactory(threadName, isDaemon), (r, executor) -> {
-            log.warn("publicScheduledExecutor#队列已经满员,正在调用拒绝策略!");
+            log.warn(String.join("#", threadName, "队列已经满员,正在调用拒绝策略!"));
             if (!executor.isShutdown()) {
                 r.run();
             }
@@ -94,14 +95,52 @@ public class ThreadPoolConfig {
      * @return
      */
     public ExecutorService getPublicThreadPoolExecutor(boolean isDaemon, String threadName) {
-        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(CORE_SIZE, MAX_SIZE, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(5000),
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(CORE_SIZE, MAX_SIZE, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000),
                 getThreadFactory(threadName, isDaemon),
                 (r, executor) -> {
-                    log.warn("publicThreadExecutor#队列已经满员,正在调用拒绝策略!");
+                    log.warn(String.join("#", threadName, "队列已经满员,正在调用拒绝策略!"));
                     if (!executor.isShutdown()) {
                         r.run();
                     }
                 });
+        return ThreadPoolRegisterCenter.register(threadPoolExecutor, 120);
+    }
+
+    /**
+     * 公共的ThreadPool定时任务
+     *
+     * @return
+     */
+    public ExecutorService getPublicThreadPoolExecutor(int corePoolSize, int maximumPoolSize, boolean isDaemon, String threadName) {
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(CORE_SIZE, MAX_SIZE, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000),
+                getThreadFactory(threadName, isDaemon),
+                (r, executor) -> {
+                    log.warn(String.join("#", threadName, "队列已经满员,正在调用拒绝策略!"));
+                    if (!executor.isShutdown()) {
+                        r.run();
+                    }
+                });
+        return ThreadPoolRegisterCenter.register(threadPoolExecutor, 120);
+    }
+
+    /**
+     * 公共的ThreadPool定时任务
+     *
+     * @return
+     */
+    public ExecutorService getPublicThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
+                                                       boolean isDaemon, String threadName, boolean isInitThreadPool) {
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(CORE_SIZE, MAX_SIZE, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000),
+                getThreadFactory(threadName, isDaemon),
+                (r, executor) -> {
+                    log.warn(String.join("#", threadName, "队列已经满员,正在调用拒绝策略!"));
+                    if (!executor.isShutdown()) {
+                        r.run();
+                    }
+                });
+        if (isInitThreadPool) {
+            threadPoolExecutor.prestartCoreThread();
+        }
         return ThreadPoolRegisterCenter.register(threadPoolExecutor, 120);
     }
 

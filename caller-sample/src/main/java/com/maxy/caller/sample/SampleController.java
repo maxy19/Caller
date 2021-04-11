@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @Author maxuyang
@@ -23,10 +24,12 @@ import java.time.temporal.ChronoUnit;
 public class SampleController {
     @Resource
     private DelayTaskService delayTaskService;
+    private AtomicInteger record = new AtomicInteger(0);
 
     @SneakyThrows
     @GetMapping("/req")
     public String req() {
+        record.incrementAndGet();
         DelayTask delayTask = new DelayTask();
         delayTask.setGroupKey("taobao");
         delayTask.setBizKey("order");
@@ -36,6 +39,16 @@ public class SampleController {
         delayTask.setTimeout(2000);
         delayTask.setRetryNum((byte) 1);
         boolean send = delayTaskService.send(Lists.newArrayList(delayTask));
-        return send+"_"+System.currentTimeMillis();
+        return send + "_" + System.currentTimeMillis();
+    }
+
+    @GetMapping("/getRecord")
+    public Integer getRecord() {
+        return record.get();
+    }
+
+    @GetMapping("/clear")
+    public void clear() {
+        record.set(0);
     }
 }
