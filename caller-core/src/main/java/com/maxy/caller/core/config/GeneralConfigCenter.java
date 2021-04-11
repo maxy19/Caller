@@ -11,10 +11,10 @@ import org.springframework.stereotype.Component;
 @Data
 public class GeneralConfigCenter {
 
-    @Value("${caller.admin.limit.num:20}")
+    @Value("${caller.admin.limit.num:200}")
     private String limitNum;
 
-    @Value("${caller.admin.pre.read:100}")
+    @Value("${caller.admin.pre.read:500}")
     private String preReadLimit;
 
     @Value("${caller.admin.push.cycle:60}")

@@ -1,5 +1,6 @@
-package com.maxy.caller.core.cache;
+package com.maxy.caller.admin.cache;
 
+import com.maxy.caller.core.service.Cache;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.JedisCluster;
@@ -19,7 +20,7 @@ import java.util.Set;
  */
 @Log4j2
 @Component
-public class CacheService {
+public class CacheService implements Cache {
 
     @Resource(name = "callerRedisCluster")
     private JedisCluster jedisCluster;
@@ -28,7 +29,7 @@ public class CacheService {
         return jedisCluster.getClusterNodes().size() / 2;
     }
 
-
+    @Override
     public Long zadd(String key, double score, String member) {
         return jedisCluster.zadd(key, score, member);
     }
@@ -36,7 +37,7 @@ public class CacheService {
     public Long lpush(String key, String... value) {
         return jedisCluster.lpush(key, value);
     }
-
+    @Override
     public List<String> getQueueDataByBackup(List<String> keys, List<String> args) {
         String script = "local result = {}\n" +
                 "local length = ARGV[1]\n" +
@@ -50,7 +51,7 @@ public class CacheService {
         return (List<String>) jedisCluster.eval(script, keys, args);
     }
 
-
+    @Override
     public List<Object> getQueueData(List<String> keys, List<String> args) {
         String script = "local result = {}\n" +
                 "local values = redis.call('ZRANGEBYSCORE', KEYS[1], ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5])\n" +
@@ -70,11 +71,11 @@ public class CacheService {
     public Set<Tuple> zrangeByScoreWithScores(String key, double min, double max) {
         return jedisCluster.zrangeByScoreWithScores(key, min, max);
     }
-
+    @Override
     public Long expire(String key, int expireTime) {
         return jedisCluster.expire(key, expireTime);
     }
-
+    @Override
     public String set(String key, int expire, String value) {
         return jedisCluster.setex(key, expire, value);
     }

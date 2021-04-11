@@ -4,10 +4,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.admin.service.AdminWorker;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.JSONUtils;
-import com.maxy.caller.core.cache.CacheService;
 import com.maxy.caller.core.common.RpcFuture;
 import com.maxy.caller.core.config.GeneralConfigCenter;
 import com.maxy.caller.core.config.ThreadPoolConfig;
@@ -125,7 +125,7 @@ public class TriggerWorker implements AdminWorker {
     private void pop() {
         try {
             //获取索引列表
-            for (int slot = 0, length = 2; slot < length; slot++) {
+            for (int slot = 0, length = config.getTotalSlot(); slot < length; slot++) {
                 Value<Integer> indexValue = new Value<>(slot);
                 loopSlotExecutor.execute(() -> {
                     getAndInvokeAll(indexValue.getValue());
