@@ -32,7 +32,7 @@ public class RingbufferInvoker implements ApplicationContextAware {
 
     @PostConstruct
     public void init() {
-        producer = new Producer(create(2048, getConsumers(20)));
+        producer = new Producer(create(2048, getConsumers(10)));
     }
 
 
