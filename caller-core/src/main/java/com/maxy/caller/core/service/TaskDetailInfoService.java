@@ -26,7 +26,7 @@ public interface TaskDetailInfoService extends CommonService {
 
     List<TaskDetailInfoBO> getPreReadInfo(Byte status, Date endTime, String limitValue);
 
-    boolean batchInsert(List<TaskDetailInfoBO> taskDetailInfoBOList);
+    List<TaskDetailInfoBO> batchInsert(List<TaskDetailInfoBO> taskDetailInfoBOList);
 
     boolean updateStatusByIds(List<Long> ids, Byte sourceStatus, Byte targetStatus);
 

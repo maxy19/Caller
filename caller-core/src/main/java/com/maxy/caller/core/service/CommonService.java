@@ -46,5 +46,6 @@ public interface CommonService {
     int ONE_DAY = ONE_HOUR * 24;
     int THREE_DAY = 3 * ONE_HOUR * 24;
     int SERVER_DAY = 7 * ONE_HOUR * 24;
+    int TEN_MINUTE_OF_SECOND = 10 * 60 * 1000;
 
 }

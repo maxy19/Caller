@@ -20,9 +20,6 @@ public class GeneralConfigCenter {
     @Value("${caller.admin.push.cycle:60}")
     private Integer pushCycleTime;
 
-    @Value("${caller.admin.pop.cycle:60}")
-    private Integer popCycleTime;
-
     @Value("${caller.admin.max.slot:256}")
     private Integer totalSlot;
 }

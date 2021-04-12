@@ -40,16 +40,15 @@ public class Consumer implements CommonService, WorkHandler<Event<List<DelayTask
 
     @Override
     public void onEvent(Event<List<DelayTask>> event) throws Exception {
-        List<TaskDetailInfoBO> taskDetailInfoBOList = BeanCopyUtils.copyListProperties(event.getElement(), TaskDetailInfoBO::new);
-        boolean result = taskDetailInfoService.batchInsert(taskDetailInfoBOList);
-        if (result) {
-            addZSetQueue(taskDetailInfoBOList, generalConfigCenter.getTotalSlot());
-        }else{
+        List<TaskDetailInfoBO> newTaskDetailBOList = taskDetailInfoService.batchInsert(BeanCopyUtils.copyListProperties(event.getElement(), TaskDetailInfoBO::new));
+        if (newTaskDetailBOList.size() > 0) {
+            addZSetQueue(newTaskDetailBOList, generalConfigCenter.getTotalSlot());
+        } else {
             //todo 发送报警邮件
             log.error("onEvent#插入数据失败!!!!");
             return;
         }
-        taskLogService.batchInsert(taskDetailInfoBOList, ONLINE.getCode(), event.getAddress());
+        taskLogService.batchInsert(newTaskDetailBOList, ONLINE.getCode(), event.getAddress());
     }
 
     /**

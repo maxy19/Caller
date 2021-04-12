@@ -148,8 +148,8 @@ public class TriggerWorker implements AdminWorker {
             result = 0;
             List<String> keys = Lists.newArrayList(ZSET_QUEUE_FORMAT.join(slot), LIST_QUEUE_FORMAT_BACKUP.join(slot));
             Long now = System.currentTimeMillis();
-            String start = String.valueOf(now - config.getPopCycleTime());
-            String end = String.valueOf(now + config.getPopCycleTime());
+            String start = String.valueOf(now - TEN_MINUTE_OF_SECOND);
+            String end = String.valueOf(now + TEN_MINUTE_OF_SECOND);
             List<String> args = Arrays.asList(start, end, "LIMIT", "0", config.getLimitNum());
             List<Object> queueData = cacheService.getQueueData(keys, args);
             if (CollectionUtils.isNotEmpty(queueData)) {

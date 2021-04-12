@@ -117,8 +117,10 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     }
 
     @Override
-    public boolean batchInsert(List<TaskDetailInfoBO> taskDetailInfoBOList) {
-        return taskDetailInfoExtendMapper.batchInsert(BeanCopyUtils.copyListProperties(taskDetailInfoBOList, TaskDetailInfo::new)) > 0;
+    public List<TaskDetailInfoBO> batchInsert(List<TaskDetailInfoBO> taskDetailInfoBOList) {
+        List<TaskDetailInfo> taskDetailInfoList = BeanCopyUtils.copyListProperties(taskDetailInfoBOList, TaskDetailInfo::new);
+        taskDetailInfoExtendMapper.batchInsert(taskDetailInfoList);
+        return BeanCopyUtils.copyListProperties(taskDetailInfoList, TaskDetailInfoBO::new);
     }
 
     @Override

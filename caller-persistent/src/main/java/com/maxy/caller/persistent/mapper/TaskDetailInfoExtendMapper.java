@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface TaskDetailInfoExtendMapper extends TaskDetailInfoMapper {
 
-    int batchInsert(List<TaskDetailInfo> taskDetailInfoList);
+    void batchInsert(List<TaskDetailInfo> taskDetailInfoList);
 
     List<TaskDetailInfo> getPreReadInfo(TaskDetailInfoExample example);
 
