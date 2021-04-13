@@ -17,7 +17,7 @@ public class GeneralConfigCenter {
     @Value("${caller.admin.pre.read:500}")
     private String preReadLimit;
 
-    @Value("${caller.admin.push.cycle:60}")
+    @Value("${caller.admin.push.cycle:600}")
     private Integer pushCycleTime;
 
     @Value("${caller.admin.max.slot:256}")
