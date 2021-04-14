@@ -17,7 +17,6 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -46,12 +45,16 @@ public class CallerUtils {
     }
 
     public static boolean isChannelWritable(Channel channel) {
-        if (Objects.isNull(channel)) {
-            log.error("isChannelWritable#无法获取channel信息!!!");
-            return false;
-        }
         if (!channel.isWritable()) {
             log.error("isChannelWritable#channel:{}超过水位线无法发送服务端信息!!!", channel);
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean isChannelActive(Channel channel) {
+        if (!channel.isActive()) {
+            log.error("isChannelActive#channel:{} 未连接!!!", channel);
             return false;
         }
         return true;

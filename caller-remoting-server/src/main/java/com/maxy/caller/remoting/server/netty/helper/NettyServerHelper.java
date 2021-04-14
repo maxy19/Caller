@@ -149,9 +149,9 @@ public class NettyServerHelper {
      */
     public Supplier<NettyServerHelper> delayTaskEvent = () -> {
         eventMap.put(MsgTypeEnum.DELAYTASK, (protocolMsg, channel) -> {
-                RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
-                ringbufferInvoker.invoke(request.getDelayTasks(),parse(channel));
-                log.debug("delayTaskEvent#接受客户端添加延迟任务:{}", request.getDelayTasks());
+            RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
+            ringbufferInvoker.invoke(request.getDelayTasks(), parse(channel));
+            log.info("delayTaskEvent#接受客户端添加延迟任务数量:{}", request.getDelayTasks().size());
         });
         return this;
     };
@@ -163,11 +163,12 @@ public class NettyServerHelper {
     }
 
 
-    private void removeNotActive(String uniqueName) {
+    public void removeNotActive(String uniqueName) {
         //去掉不活跃的
         List<Channel> collection = Lists.newArrayList();
         List<Channel> channels = activeChannel.get(uniqueName);
         if (CollectionUtils.isEmpty(channels)) {
+            log.warn("removeNotActive#{}没有找到channel信息,不进行移除非活跃用户操作.", uniqueName);
             return;
         }
         channels.removeIf(socketChannel -> {
@@ -181,7 +182,9 @@ public class NettyServerHelper {
             }
             return false;
         });
-        activeChannel.values().removeAll(collection);
+        if (CollectionUtils.isNotEmpty(collection)) {
+            activeChannel.values().removeAll(collection);
+        }
     }
 
     @PreDestroy

@@ -86,7 +86,6 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
         TaskDetailInfoBO taskDetailInfoBO = getByInfoId(id);
         if(!ExecutionStatusEnum.isFinalState(taskDetailInfoBO.getExecutionStatus())){
             taskDetailInfoBO.setExecutionStatus(status);
-            return false;
         }
         TaskDetailInfo taskDetailInfo = new TaskDetailInfo();
         BeanCopyUtils.copy(taskDetailInfoBO, taskDetailInfo);

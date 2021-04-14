@@ -230,6 +230,8 @@ public class TriggerWorker implements AdminWorker {
     private void remoteClientMethod(Pair<TaskDetailInfoBO, CallerTaskDTO> context) {
         //netty call client
         executorSchedule.execute(() -> {
+            //移除已经不连接
+            nettyServerHelper.removeNotActive(getUniqueName(context.getLeft()));
             List<Channel> channels = nettyServerHelper.getActiveChannel().get(getGroupName(context.getLeft()));
             if (CollectionUtils.isEmpty(channels)) {
                 log.error("remoteClientMethod#没有找到可以连接的通道!!!!.");
@@ -327,6 +329,9 @@ public class TriggerWorker implements AdminWorker {
     @SneakyThrows
     private boolean send(Channel channel, Value<Boolean> value, ProtocolMsg request) {
         ChannelFuture channelFuture = null;
+        if (!CallerUtils.isChannelActive(channel)) {
+            return false;
+        }
         if (CallerUtils.isChannelWritable(channel)) {
             channelFuture = channel.writeAndFlush(request);
         } else {

@@ -14,6 +14,9 @@ import javax.annotation.Resource;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+/**
+ * @author maxy
+ */
 @Log4j2
 @Component
 @ChannelHandler.Sharable
@@ -32,11 +35,10 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<ProtocolMsg>
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ProtocolMsg msg) throws Exception {
-        ProtocolMsg protocolMsg = (ProtocolMsg) msg;
         log.debug("channelRead0#channel中有可读的数据.客户端地址:{}", ctx.channel().remoteAddress());
-        BiConsumer<ProtocolMsg, Channel> consumer = nettServerHelper.getEventMap().get(protocolMsg.getMsgTypeEnum());
+        BiConsumer<ProtocolMsg, Channel> consumer = nettServerHelper.getEventMap().get(msg.getMsgTypeEnum());
         if (Objects.nonNull(consumer)) {
-            consumer.accept(protocolMsg, ctx.channel());
+            consumer.accept(msg, ctx.channel());
         }
     }
 
