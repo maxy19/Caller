@@ -11,6 +11,7 @@ import com.maxy.caller.core.service.TaskDetailInfoService;
 import com.maxy.caller.core.service.TaskLogService;
 import com.maxy.caller.pojo.DelayTask;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 
 import java.util.List;
@@ -41,7 +42,7 @@ public class Consumer implements CommonService, WorkHandler<Event<List<DelayTask
     @Override
     public void onEvent(Event<List<DelayTask>> event) throws Exception {
         List<TaskDetailInfoBO> newTaskDetailBOList = taskDetailInfoService.batchInsert(BeanCopyUtils.copyListProperties(event.getElement(), TaskDetailInfoBO::new));
-        if (newTaskDetailBOList.size() > 0) {
+        if (CollectionUtils.isNotEmpty(newTaskDetailBOList)) {
             addZSetQueue(newTaskDetailBOList, generalConfigCenter.getTotalSlot());
         } else {
             //todo 发送报警邮件
