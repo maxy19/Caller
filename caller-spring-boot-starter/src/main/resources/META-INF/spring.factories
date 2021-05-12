@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+    com.maxy.caller.client.executor.CallerAutoConfiguration

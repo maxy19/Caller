@@ -1,19 +1,23 @@
-package com.maxy.caller.sample;
+package com.maxy.caller.client.executor;
 
 import com.maxy.caller.common.utils.IpUtils;
 import com.maxy.caller.pojo.RegConfigInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * @author Maxy
+ * @author maxuyang
  */
+@ConfigurationProperties(prefix = "caller.reg")
 @Configuration
-public class RegInfoConfig {
+@EnableConfigurationProperties
+public class CallerAutoConfiguration {
 
-    //@Value("${caller.reg.remote.addresses:10.239.201.240}")
+    //@Value("${caller.reg.remote.addresses:127.0.0.1}")
     private String remoteIp = IpUtils.getIp();
 
     @Value("${caller.reg.remote.port:8888}")
@@ -28,14 +32,13 @@ public class RegInfoConfig {
     @Value("${caller.reg.bizKey:null}")
     private String bizKey;
 
-
     @Bean
     public RegConfigInfo regConfigInfo() {
         RegConfigInfo regConfigInfo = new RegConfigInfo();
-        regConfigInfo.setBizKey("order");
-        regConfigInfo.setGroupKey("taobao");
-        regConfigInfo.setAccessToken(accessToken);
-        regConfigInfo.setRemoteAddresses(StringUtils.joinWith(":",remoteIp, remotePort));
+        regConfigInfo.setBizKey(bizKey);
+        regConfigInfo.setGroupKey(groupKey);
+        regConfigInfo.setRemoteAddresses(StringUtils.joinWith(":", remoteIp, remotePort));
         return regConfigInfo;
     }
+
 }

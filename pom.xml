@@ -12,7 +12,7 @@
         <module>caller-common</module>
         <module>caller-core</module>
         <module>caller-admin</module>
-        <module>caller-client</module>
+        <module>caller-spring-boot-starter</module>
         <module>caller-sample</module>
         <module>caller-model</module>
         <module>caller-persistent</module>
@@ -181,7 +181,7 @@
             </dependency>
             <dependency>
                 <groupId>com.maxy.caller</groupId>
-                <artifactId>caller-client</artifactId>
+                <artifactId>caller-spring-boot-starter</artifactId>
                 <version>${caller.version}</version>
             </dependency>
             <dependency>

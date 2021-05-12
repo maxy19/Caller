@@ -1,0 +1,34 @@
+{
+  "properties": [
+    {
+      "name": "caller.reg.remote.addresses",
+      "type": "java.lang.String",
+      "description": "caller服务器地址.",
+      "defaultValue": "localhost"
+    },
+    {
+      "name": "caller.reg.remote.port",
+      "type": "java.lang.Integer",
+      "description": "caller服务器端口.",
+      "defaultValue": 8888
+    },
+    {
+      "name": "caller.reg.accessToken",
+      "type": "java.lang.String",
+      "description": "accessToken.",
+      "defaultValue": ""
+    },
+    {
+      "name": "caller.reg.groupKey",
+      "type": "java.lang.String",
+      "description": "组信息.",
+      "defaultValue": ""
+    },
+    {
+      "name": "caller.reg.bizKey",
+      "type": "java.lang.String",
+      "description": "业务信息.",
+      "defaultValue": ""
+    }
+  ]
+}
