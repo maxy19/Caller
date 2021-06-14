@@ -59,7 +59,7 @@ public class ClientExecutor implements ApplicationContextAware, SmartInitializin
             nettyClient.start(regConfigInfo.getAddressInfos(), countDownLatch);
         });
         try {
-            countDownLatch.await(5, TimeUnit.SECONDS);
+             countDownLatch.await(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             log.error("netty客户端启动失败!!", e);
         }

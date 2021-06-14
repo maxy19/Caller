@@ -152,7 +152,8 @@ public class NettyServer extends AbstractNettyRemoting {
                  */
                 .childOption(ChannelOption.SO_RCVBUF, nettyServerConfig.getServerSocketRcvBufSize())
                 /**
-                 * 禁用了Nagle算法 如果开启则会造成网络延迟因为此算法是将包数量与大小积攒到一定量再发送
+                 * Nagle算法试图减少TCP包的数量和结构性开销, 将多个较小的包组合成较大的包进行发送.但这不是重点,
+                 * 关键是这个算法受TCP延迟确认影响, 会导致相继两次向连接发送请求包
                  */
                 .childOption(ChannelOption.TCP_NODELAY, true)
                 .localAddress(inetSocketAddress)
