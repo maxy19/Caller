@@ -2,6 +2,7 @@ package com.maxy.caller.remoting.server.netty.spmc;
 
 import com.lmax.disruptor.RingBuffer;
 import com.maxy.caller.pojo.DelayTask;
+import io.netty.channel.Channel;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.List;
@@ -18,12 +19,12 @@ public class Producer {
         this.ringBuffer = ringBuffer;
     }
 
-    public void sendData(List<DelayTask> value,String address) {
+    public void sendData(List<DelayTask> value, Channel channel) {
         long sequence = ringBuffer.next();
         try {
             Event<List<DelayTask>> event = ringBuffer.get(sequence);
             event.setElement(value);
-            event.setAddress(address);
+            event.setChannel(channel);
         } finally {
             ringBuffer.publish(sequence);
         }

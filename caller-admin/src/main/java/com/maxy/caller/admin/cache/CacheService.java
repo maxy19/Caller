@@ -79,27 +79,27 @@ public class CacheService implements Cache {
     public String set(String key, int expire, String value) {
         return jedisCluster.setex(key, expire, value);
     }
-
+    @Override
     public void hmset(String key, Map<String, String> hash, int expire) {
         jedisCluster.hmset(key, hash);
         expire(key, expire);
     }
-
+    @Override
     public void hmset(String key, String field, String value, int expire) {
         Map<String, String> map = new HashMap<>();
         map.put(field, value);
         jedisCluster.hmset(key, map);
         expire(key, expire);
     }
-
+    @Override
     public String hget(String key, String field) {
         return jedisCluster.hget(key, field);
     }
-
+    @Override
     public String get(String key) {
         return jedisCluster.get(key);
     }
-
+    @Override
     public long lrem(String key, String arg) {
         return jedisCluster.lrem(key, 1, arg);
     }

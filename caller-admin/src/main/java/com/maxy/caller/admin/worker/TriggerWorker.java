@@ -243,9 +243,8 @@ public class TriggerWorker implements AdminWorker {
                 log.error("remoteClientMethod#根据{}没有找到要发送的通道,请检查客户端是否存在!", context.getRight());
                 return;
             }
-            boolean result = syncCallback(context.getRight(), channel);
             //发现异常如果需要重试将再次调用方法
-            if (!result) {
+            if (!asyncCallback(context.getRight(), channel)) {
                 if (context.getRight().getRetryNum() > 0) {
                     retryExecutor.execute(() -> retryExecute(context, channel));
                 } else {
@@ -278,7 +277,7 @@ public class TriggerWorker implements AdminWorker {
      */
     private void retryExecute(Pair<TaskDetailInfoBO, CallerTaskDTO> context, Channel channel) {
         for (byte retryNum = 1, totalNum = context.getRight().getRetryNum(); retryNum <= totalNum; retryNum++) {
-            boolean result = syncCallback(context.getRight(), channel);
+            boolean result = asyncCallback(context.getRight(), channel);
             context.getLeft().setExecutionStatus(RETRYING.getCode());
             taskLogService.save(context.getLeft(), parse(channel), retryNum);
             if (!result) {
@@ -291,17 +290,16 @@ public class TriggerWorker implements AdminWorker {
 
 
     /**
-     * 同步执行回调
+     * 异步执行回调
      *
      * @return
      */
-    private boolean syncCallback(CallerTaskDTO callerTaskDTO, Channel channel) {
+    private boolean asyncCallback(CallerTaskDTO callerTaskDTO, Channel channel) {
         Value<Boolean> value = new Value<>(true);
         RpcFuture<ProtocolMsg> rpcFuture = new RpcFuture(new DefaultPromise(new DefaultEventExecutor()), callerTaskDTO.getTimeout());
         ProtocolMsg request = ProtocolMsg.toEntity(callerTaskDTO);
         //request
-        boolean result = send(channel, value, request);
-        if (!result) {
+        if (!send(channel, value, request)) {
             return false;
         }
         //callback

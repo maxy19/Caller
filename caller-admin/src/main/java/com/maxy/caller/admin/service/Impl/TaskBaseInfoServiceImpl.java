@@ -2,12 +2,12 @@ package com.maxy.caller.admin.service.Impl;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskBaseInfoBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
 import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.core.exception.BusinessException;
+import com.maxy.caller.core.service.Cache;
 import com.maxy.caller.core.service.TaskBaseInfoService;
 import com.maxy.caller.model.TaskBaseInfo;
 import com.maxy.caller.model.TaskGroup;
@@ -38,7 +38,7 @@ public class TaskBaseInfoServiceImpl implements TaskBaseInfoService {
     @Resource
     private TaskGroupMapper taskGroupMapper;
     @Resource
-    private CacheService cacheService;
+    private Cache cache;
 
     @Override
     public PageInfo<TaskBaseInfoBO> list(QueryConditionBO queryConditionBO) {
@@ -74,7 +74,7 @@ public class TaskBaseInfoServiceImpl implements TaskBaseInfoService {
         Map<String, String> map = new HashMap<>();
         map.put(ALARM_EMAIL, taskBaseInfoBO.getAlarmEmail());
         map.put(STRATEGY_VALUE, taskBaseInfoBO.getExecutorRouterStrategy().toString());
-        cacheService.hmset(getUniqueName(taskBaseInfoBO), map, ONE_HOUR);
+        cache.hmset(getUniqueName(taskBaseInfoBO), map, ONE_HOUR);
         return true;
     }
 
@@ -137,10 +137,10 @@ public class TaskBaseInfoServiceImpl implements TaskBaseInfoService {
      */
     @Override
     public Byte getRouterStrategy(String groupKey, String bizKey, String topic) {
-        String strategyValue = cacheService.hget(getUniqueName(groupKey, bizKey, topic), STRATEGY_VALUE);
+        String strategyValue = cache.hget(getUniqueName(groupKey, bizKey, topic), STRATEGY_VALUE);
         if (StringUtils.isBlank(strategyValue)) {
             TaskBaseInfoBO taskBaseInfoBO = getByUniqueKey(groupKey, bizKey, topic);
-            cacheService.hmset(getUniqueName(taskBaseInfoBO), STRATEGY_VALUE, String.valueOf(taskBaseInfoBO.getExecutorRouterStrategy()), ONE_HOUR);
+            cache.hmset(getUniqueName(taskBaseInfoBO), STRATEGY_VALUE, String.valueOf(taskBaseInfoBO.getExecutorRouterStrategy()), ONE_HOUR);
             return taskBaseInfoBO.getExecutorRouterStrategy();
         }
         return Byte.valueOf(strategyValue);
@@ -148,10 +148,10 @@ public class TaskBaseInfoServiceImpl implements TaskBaseInfoService {
 
     @Override
     public String getAlarmEmail(String groupKey, String bizKey, String topic) {
-        String alarmEmail = cacheService.hget(getUniqueName(groupKey, bizKey, topic), ALARM_EMAIL);
+        String alarmEmail = cache.hget(getUniqueName(groupKey, bizKey, topic), ALARM_EMAIL);
         if (StringUtils.isBlank(alarmEmail)) {
             TaskBaseInfoBO taskBaseInfoBO = getByUniqueKey(groupKey, bizKey, topic);
-            cacheService.hmset(getUniqueName(taskBaseInfoBO), ALARM_EMAIL, String.valueOf(taskBaseInfoBO.getExecutorRouterStrategy()), ONE_HOUR);
+            cache.hmset(getUniqueName(taskBaseInfoBO), ALARM_EMAIL, String.valueOf(taskBaseInfoBO.getExecutorRouterStrategy()), ONE_HOUR);
             return taskBaseInfoBO.getAlarmEmail();
         }
         return alarmEmail;

@@ -8,7 +8,8 @@ import java.util.Objects;
  **/
 public enum GenerateKeyEnum {
 
-    DETAIL_TASK_INFO("detail:task:info:%s"),
+    DETAIL_TASK_INFO("caller:detail:task:info:%s"),
+    REPEAT_TASK_INFO("caller:repeat:%s:%s"),
     ZSET_QUEUE_FORMAT("caller:zset:{%s}"),
     LIST_QUEUE_FORMAT_BACKUP("caller:list:backup:{%s}"),
     ;

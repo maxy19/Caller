@@ -150,7 +150,7 @@ public class NettyServerHelper {
     public Supplier<NettyServerHelper> delayTaskEvent = () -> {
         eventMap.put(MsgTypeEnum.DELAYTASK, (protocolMsg, channel) -> {
             RpcRequestDTO request = (RpcRequestDTO) getRequest(protocolMsg);
-            ringbufferInvoker.invoke(request.getDelayTasks(), parse(channel));
+            ringbufferInvoker.invoke(request.getDelayTasks(), channel);
             log.info("delayTaskEvent#接受客户端添加延迟任务数量:{}", request.getDelayTasks().size());
         });
         return this;

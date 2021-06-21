@@ -10,6 +10,7 @@ import com.maxy.caller.core.service.Cache;
 import com.maxy.caller.core.service.TaskDetailInfoService;
 import com.maxy.caller.core.service.TaskLogService;
 import com.maxy.caller.pojo.DelayTask;
+import io.netty.channel.Channel;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
@@ -45,8 +46,8 @@ public class RingbufferInvoker {
     }
 
 
-    public void invoke(List<DelayTask> delayTasks, String address) {
-        producer.sendData(delayTasks, address);
+    public void invoke(List<DelayTask> delayTasks, Channel channel) {
+        producer.sendData(delayTasks, channel);
     }
 
     private Consumer[] getConsumers(int length) {

@@ -1,7 +1,6 @@
 package com.maxy.caller.admin.service.Impl;
 
 import com.github.pagehelper.PageInfo;
-import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.bo.QueryConditionBO;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.BeanCopyUtils;
@@ -9,6 +8,7 @@ import com.maxy.caller.common.utils.DateUtils;
 import com.maxy.caller.common.utils.JSONUtils;
 import com.maxy.caller.core.config.GeneralConfigCenter;
 import com.maxy.caller.core.enums.ExecutionStatusEnum;
+import com.maxy.caller.core.service.Cache;
 import com.maxy.caller.core.service.TaskDetailInfoService;
 import com.maxy.caller.model.TaskDetailInfo;
 import com.maxy.caller.model.TaskGroup;
@@ -37,7 +37,7 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     @Resource
     private TaskGroupMapper taskGroupMapper;
     @Resource
-    private CacheService cacheService;
+    private Cache cache;
     @Resource
     private GeneralConfigCenter config;
 
@@ -139,6 +139,6 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     public boolean removeBackup(TaskDetailInfoBO taskDetailInfoBO) {
         long time = taskDetailInfoBO.getExecutionTime().getTime();
         String key = LIST_QUEUE_FORMAT_BACKUP.join(mod(time, config.getTotalSlot()));
-        return cacheService.lrem(key, JSONUtils.toJSONString(taskDetailInfoBO)) > 0;
+        return cache.lrem(key, JSONUtils.toJSONString(taskDetailInfoBO)) > 0;
     }
 }

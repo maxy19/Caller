@@ -1,6 +1,5 @@
 package com.maxy.caller.admin.worker;
 
-import com.maxy.caller.admin.cache.CacheService;
 import com.maxy.caller.admin.service.AdminWorker;
 import com.maxy.caller.bo.TaskDetailInfoBO;
 import com.maxy.caller.common.utils.DateUtils;
@@ -8,6 +7,7 @@ import com.maxy.caller.common.utils.JSONUtils;
 import com.maxy.caller.core.config.GeneralConfigCenter;
 import com.maxy.caller.core.config.ThreadPoolConfig;
 import com.maxy.caller.core.config.ThreadPoolRegisterCenter;
+import com.maxy.caller.core.service.Cache;
 import com.maxy.caller.core.service.TaskDetailInfoService;
 import com.maxy.caller.core.service.TaskLockService;
 import com.maxy.caller.core.service.TaskLogService;
@@ -44,7 +44,7 @@ import static com.maxy.caller.core.enums.GenerateKeyEnum.ZSET_QUEUE_FORMAT;
 public class ScheduleWorker implements AdminWorker {
 
     @Resource
-    private CacheService cacheService;
+    private Cache cache;
     @Resource
     private TaskDetailInfoService taskDetailInfoService;
     @Resource
@@ -133,7 +133,7 @@ public class ScheduleWorker implements AdminWorker {
             long time = taskDetailInfoBO.getExecutionTime().getTime();
             //消除bigKey则将队列通过{node-1}分片 打散映射
             long slot = mod(time, size);
-            cacheService.zadd(ZSET_QUEUE_FORMAT.join(slot), (double) time, JSONUtils.toJSONString(taskDetailInfoBO));
+            cache.zadd(ZSET_QUEUE_FORMAT.join(slot), (double) time, JSONUtils.toJSONString(taskDetailInfoBO));
             cacheDetailTaskInfo(taskDetailInfoBO, time);
         });
     }
@@ -150,7 +150,7 @@ public class ScheduleWorker implements AdminWorker {
         long remainingTime = TimeUnit.MILLISECONDS.toSeconds(time - System.currentTimeMillis()) + TimeUnit.MILLISECONDS.toMillis(RandomUtils.nextInt(10000, 60000));
         //单个detail信息
         if (remainingTime - ONE_SECOND > 0) {
-            cacheService.set(DETAIL_TASK_INFO.join(taskDetailInfoBO.getId()), (int) remainingTime, JSONUtils.toJSONString(taskDetailInfoBO));
+            cache.set(DETAIL_TASK_INFO.join(taskDetailInfoBO.getId()), (int) remainingTime, JSONUtils.toJSONString(taskDetailInfoBO));
         }
     }
 }
