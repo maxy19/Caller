@@ -89,7 +89,14 @@
                 #{taskDetailInfo.topic,jdbcType=VARCHAR},
                 #{taskDetailInfo.executionParam,jdbcType=VARCHAR},
                 #{taskDetailInfo.executionTime,jdbcType=TIMESTAMP},
-                3,
+                <choose>
+                    <when test="taskDetailInfo.executionStatus!=null and taskDetailInfo.executionStatus!=''">
+                        #{taskDetailInfo.executionStatus,jdbcType=TINYINT},
+                    </when>
+                    <otherwise>
+                        3,
+                    </otherwise>
+                </choose>
                 #{taskDetailInfo.timeout,jdbcType=INTEGER},
                 #{taskDetailInfo.retryNum,jdbcType=TINYINT},
                 now(3),now(3)

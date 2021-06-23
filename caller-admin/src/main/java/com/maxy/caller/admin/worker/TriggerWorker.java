@@ -125,7 +125,7 @@ public class TriggerWorker implements AdminWorker {
     private void pop() {
         try {
             //获取索引列表
-            for (int slot = 0, length = config.getTotalSlot(); slot < length; slot++) {
+            for (int slot = 0, length = config.getTotalSlot(); slot <= length; slot++) {
                 Value<Integer> indexValue = new Value<>(slot);
                 loopSlotExecutor.execute(() -> {
                     getAndInvokeAll(indexValue.getValue());
@@ -147,8 +147,9 @@ public class TriggerWorker implements AdminWorker {
         do {
             result = 0;
             List<String> keys = Lists.newArrayList(ZSET_QUEUE_FORMAT.join(slot), LIST_QUEUE_FORMAT_BACKUP.join(slot));
-            Long now = System.currentTimeMillis();
-            String start = String.valueOf(now - TEN_MINUTE_OF_SECOND);
+            long now = System.currentTimeMillis();
+            //任务范围[1<now<10]
+            String start = String.valueOf(now - ONE_MINUTE);
             String end = String.valueOf(now + TEN_MINUTE_OF_SECOND);
             List<String> args = Arrays.asList(start, end, "LIMIT", "0", config.getLimitNum());
             List<Object> queueData = cacheService.getQueueData(keys, args);

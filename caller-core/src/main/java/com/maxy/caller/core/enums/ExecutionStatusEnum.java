@@ -16,7 +16,7 @@ public enum ExecutionStatusEnum {
     RETRYING((byte) 5, "重试中."),
     EXECUTION_SUCCEED((byte) 6, "执行成功."),
     EXECUTION_FAILED((byte) 7, "执行失败."),
-    EXPIRED((byte) 8, "已超期.");
+    EXPIRED((byte) 8, "已过期.");
 
     private Byte code;
     private String desc;

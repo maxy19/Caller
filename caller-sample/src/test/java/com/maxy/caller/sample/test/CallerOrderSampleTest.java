@@ -36,17 +36,18 @@ public class CallerOrderSampleTest {
 
     @Test
     public void sendTask() throws Exception {
-        int total = 2;
+        int total = 15;
         long start = System.currentTimeMillis();
         for (int i = 0; i < total; i++) {
             count.incrementAndGet();
+            int finalI = i;
             new Thread(() -> {
                 List<DelayTask> list = new ArrayList<>();
                 DelayTask delayTask = new DelayTask();
                 delayTask.setGroupKey("taobao");
                 delayTask.setBizKey("order");
                 delayTask.setTopic("clsExpireOrder");
-                delayTask.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 10, ChronoUnit.SECONDS));
+                delayTask.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 1000*(finalI +1), ChronoUnit.SECONDS));
                 delayTask.setExecutionParam("触发成功!!");
                 delayTask.setTimeout(4000);
                 delayTask.setRetryNum((byte) 1);
