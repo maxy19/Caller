@@ -47,7 +47,7 @@ public class CallerOrderSampleTest {
                 delayTask.setGroupKey("taobao");
                 delayTask.setBizKey("order");
                 delayTask.setTopic("clsExpireOrder");
-                delayTask.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 1000*(finalI +1), ChronoUnit.SECONDS));
+                delayTask.setExecutionTime(LocalDateUtils.plus(LocalDateTime.now(), 1*(finalI +1), ChronoUnit.SECONDS));
                 delayTask.setExecutionParam("触发成功!!");
                 delayTask.setTimeout(4000);
                 delayTask.setRetryNum((byte) 1);

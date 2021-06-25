@@ -50,6 +50,7 @@ import static com.maxy.caller.admin.enums.RouterStrategyEnum.router;
 import static com.maxy.caller.core.common.RpcHolder.REQUEST_MAP;
 import static com.maxy.caller.core.constant.ThreadConstant.ADMIN_TRIGGER_BACKUP_WORKER_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.ADMIN_TRIGGER_WORKER_THREAD_POOL;
+import static com.maxy.caller.core.constant.ThreadConstant.HANDLE_CALLBACK_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.INVOKE_CLIENT_TASK_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.POP_LOOP_SLOT_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.RETRY_TASK_THREAD_POOL;
@@ -88,10 +89,11 @@ public class TriggerWorker implements AdminWorker {
     private ExecutorService worker = threadPoolConfig.getSingleThreadExecutor(true, ADMIN_TRIGGER_WORKER_THREAD_POOL);
     private ExecutorService backupWorker = threadPoolConfig.getSingleThreadExecutor(false, ADMIN_TRIGGER_BACKUP_WORKER_THREAD_POOL);
     private ExecutorService executorSchedule = threadPoolConfig.getPublicThreadPoolExecutor(false, INVOKE_CLIENT_TASK_THREAD_POOL);
-    private CacheTimer cacheTimer = CacheTimer.getEntity();
     private ExecutorService retryExecutor = threadPoolConfig.getPublicThreadPoolExecutor(false, RETRY_TASK_THREAD_POOL);
     private ExecutorService loopSlotExecutor = threadPoolConfig.getPublicThreadPoolExecutor(true, POP_LOOP_SLOT_THREAD_POOL);
+    private ExecutorService callbackExecutor = threadPoolConfig.getPublicThreadPoolExecutor(true, HANDLE_CALLBACK_THREAD_POOL);
     private volatile boolean toggle = true;
+    private CacheTimer cacheTimer = CacheTimer.toEntity();
 
     @PostConstruct
     public void init() {
@@ -169,9 +171,9 @@ public class TriggerWorker implements AdminWorker {
      */
     private boolean checkExpireTaskInfo(Pair<TaskDetailInfoBO, CallerTaskDTO> context) {
         TaskDetailInfoBO taskDetailInfoBO = context.getLeft();
-        if (taskDetailInfoBO.getExecutionTime().getTime() <= System.currentTimeMillis()) {
+        if (taskDetailInfoBO.getExecutionTime().getTime() <= (System.currentTimeMillis() - TWO_MINUTE)) {
             log.warn("checkExpireTaskInfo#[{}]任务,时间:[{}]已过期将丢弃.", getUniqueName(taskDetailInfoBO), taskDetailInfoBO.getExecutionTime());
-            taskDetailInfoService.removeBackup(taskDetailInfoBO);
+            taskDetailInfoService.removeBackupCache(taskDetailInfoBO);
             //更新为过期
             if (taskDetailInfoService.updateStatus(taskDetailInfoBO.getId(), EXPIRED.getCode())) {
                 taskLogService.save(taskDetailInfoBO);
@@ -232,7 +234,7 @@ public class TriggerWorker implements AdminWorker {
         //netty call client
         executorSchedule.execute(() -> {
             //移除已经不连接
-            nettyServerHelper.removeNotActive(getUniqueName(context.getLeft()));
+            nettyServerHelper.removeNotActive(getGroupName(context.getLeft()));
             List<Channel> channels = nettyServerHelper.getActiveChannel().get(getGroupName(context.getLeft()));
             if (CollectionUtils.isEmpty(channels)) {
                 log.error("remoteClientMethod#没有找到可以连接的通道!!!!.");
@@ -249,7 +251,7 @@ public class TriggerWorker implements AdminWorker {
                 if (context.getRight().getRetryNum() > 0) {
                     retryExecutor.execute(() -> retryExecute(context, channel));
                 } else {
-                    taskDetailInfoService.removeBackup(context.getLeft());
+                    taskDetailInfoService.removeBackupCache(context.getLeft());
                     context.getLeft().fillStatusAndErrorMsg("执行远程方法异常!", EXECUTION_FAILED.getCode());
                     taskDetailInfoService.update(context.getLeft());
                     taskLogService.save(context.getLeft(), parse(channel), (byte) 0);
@@ -282,40 +284,13 @@ public class TriggerWorker implements AdminWorker {
             context.getLeft().setExecutionStatus(RETRYING.getCode());
             taskLogService.save(context.getLeft(), parse(channel), retryNum);
             if (!result) {
-                taskDetailInfoService.removeBackup(context.getLeft());
+                taskDetailInfoService.removeBackupCache(context.getLeft());
                 taskDetailInfoService.update(context.getLeft());
                 return;
             }
         }
     }
 
-
-    /**
-     * 异步执行回调
-     *
-     * @return
-     */
-    private boolean asyncCallback(CallerTaskDTO callerTaskDTO, Channel channel) {
-        Value<Boolean> value = new Value<>(true);
-        RpcFuture<ProtocolMsg> rpcFuture = new RpcFuture(new DefaultPromise(new DefaultEventExecutor()), callerTaskDTO.getTimeout());
-        ProtocolMsg request = ProtocolMsg.toEntity(callerTaskDTO);
-        //request
-        if (!send(channel, value, request)) {
-            return false;
-        }
-        //callback
-        try {
-            REQUEST_MAP.put(request.getRequestId(), rpcFuture);
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            ProtocolMsg protocolMsg = rpcFuture.getPromise().get(rpcFuture.getTimeout(), TimeUnit.MILLISECONDS);
-            handleCallback.accept(protocolMsg, channel);
-            log.info("syncCallback:任务ID:{},耗时:{}", callerTaskDTO.getDetailTaskId(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            value.setValue(false);
-            log.error("syncCallback#调用方法超时或者遇到异常!! 任务ID:{}", callerTaskDTO.getDetailTaskId(), e);
-        }
-        return value.getValue();
-    }
 
     /**
      * 写入并发送
@@ -341,21 +316,53 @@ public class TriggerWorker implements AdminWorker {
     }
 
     /**
+     * 异步执行回调
+     *
+     * @return
+     */
+    private boolean asyncCallback(CallerTaskDTO callerTaskDTO, Channel channel) {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        Value<Boolean> value = new Value<>(true);
+        RpcFuture<ProtocolMsg> rpcFuture = new RpcFuture(new DefaultPromise(new DefaultEventExecutor()), callerTaskDTO.getTimeout());
+        ProtocolMsg request = ProtocolMsg.toEntity(callerTaskDTO);
+        //request
+        if (!send(channel, value, request)) {
+            return false;
+        }
+        //callback
+        try {
+            REQUEST_MAP.put(request.getRequestId(), rpcFuture);
+            ProtocolMsg protocolMsg = rpcFuture.getPromise().get(rpcFuture.getTimeout(), TimeUnit.MILLISECONDS);
+            handleCallback.accept(protocolMsg, channel);
+            log.info("asyncCallback#任务ID:{},耗时:{}", callerTaskDTO.getDetailTaskId(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            value.setValue(false);
+            log.error("asyncCallback#调用方法超时或者遇到异常!! 任务ID:{}", callerTaskDTO.getDetailTaskId(), e);
+        }
+        return value.getValue();
+    }
+
+
+    /**
      * callback 处理
      */
     private BiConsumer<ProtocolMsg, Channel> handleCallback = ((response, channel) -> {
-        RpcRequestDTO request = (RpcRequestDTO) getRequest(response);
-        CallerTaskDTO dto = request.getCallerTaskDTO();
-        TaskDetailInfoBO taskDetailInfoBO = getDetailTask(dto);
-        if (Objects.isNull(taskDetailInfoBO)) {
-            throw new BusinessException(FOUND_NOT_EXECUTE_INFO);
-        }
-        taskDetailInfoService.removeBackup(taskDetailInfoBO);
-        ResultDTO resultDTO = request.getResultDTO();
-        taskDetailInfoBO.setExecutionStatus(resultDTO.isSuccess() ? EXECUTION_SUCCEED.getCode() : EXECUTION_FAILED.getCode());
-        taskDetailInfoBO.setErrorMsg(resultDTO.getMessage());
-        taskDetailInfoService.update(taskDetailInfoBO);
-        taskLogService.saveClientResult(taskDetailInfoBO, resultDTO.getMessage(), parse(channel));
+        callbackExecutor.execute(() -> {
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            RpcRequestDTO request = (RpcRequestDTO) getRequest(response);
+            CallerTaskDTO dto = request.getCallerTaskDTO();
+            TaskDetailInfoBO taskDetailInfoBO = getDetailTask(dto);
+            if (Objects.isNull(taskDetailInfoBO)) {
+                throw new BusinessException(FOUND_NOT_EXECUTE_INFO);
+            }
+            taskDetailInfoService.removeBackupCache(taskDetailInfoBO);
+            ResultDTO resultDTO = request.getResultDTO();
+            taskDetailInfoBO.setExecutionStatus(resultDTO.isSuccess() ? EXECUTION_SUCCEED.getCode() : EXECUTION_FAILED.getCode());
+            taskDetailInfoBO.setErrorMsg(resultDTO.getMessage());
+            taskDetailInfoService.update(taskDetailInfoBO);
+            taskLogService.saveClientResult(taskDetailInfoBO, resultDTO.getMessage(), parse(channel));
+            log.info("handleCallback#耗时:{}", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        });
     });
 
     private Object getRequest(ProtocolMsg protocolMsg) {

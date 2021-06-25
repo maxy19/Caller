@@ -35,12 +35,13 @@ public interface CommonService {
 
     int PROCESSORS = Runtime.getRuntime().availableProcessors();
     int CORE_SIZE = PROCESSORS * 2;
-    int MAX_SIZE = CORE_SIZE + CORE_SIZE / 2;
+    int MAX_SIZE = CORE_SIZE * 2;
 
     String ALARM_EMAIL = "alarmEmail";
     String STRATEGY_VALUE = "strategyValue";
     String NULL_STR = "NULL";
     int ONE_MINUTE = 60;
+    int TWO_MINUTE = 2 * 60;
     int ONE_MILLISECOND = 1;
     int ONE_SECOND = ONE_MILLISECOND * 1000;
     int ONE_HOUR = ONE_MINUTE * 60;

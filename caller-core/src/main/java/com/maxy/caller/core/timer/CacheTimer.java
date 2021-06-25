@@ -27,7 +27,7 @@ public class CacheTimer {
         }, 100L, TimeUnit.MILLISECONDS, 512);
     }
 
-    public static CacheTimer getEntity() {
+    public static CacheTimer toEntity() {
         return new CacheTimer();
     }
 

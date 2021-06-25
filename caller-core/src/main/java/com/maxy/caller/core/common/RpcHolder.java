@@ -7,5 +7,5 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class RpcHolder {
 
-    public static final Map<String,RpcFuture<ProtocolMsg>> REQUEST_MAP = new ConcurrentHashMap();
+    public static final Map<Long, RpcFuture<ProtocolMsg>> REQUEST_MAP = new ConcurrentHashMap();
 }

@@ -13,9 +13,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.logging.log4j.core.util.UuidUtil;
 
 import java.util.List;
+import java.util.concurrent.atomic.LongAdder;
 
 
 /**
@@ -30,9 +30,10 @@ import java.util.List;
 public class ProtocolMsg<T> {
 
     private ProtocolHeader protocolHeader;
-    private String requestId;
+    private Long requestId;
     private MsgTypeEnum msgTypeEnum;
     private T body;
+    private static LongAdder longAdder = new LongAdder();
 
     public ProtocolMsg(MsgTypeEnum msgTypeEnum) {
         this.msgTypeEnum = msgTypeEnum;
@@ -53,7 +54,7 @@ public class ProtocolMsg<T> {
         //set body
         protocolMsg.setBody(rpcRequestDTO);
         //reqId
-        protocolMsg.setRequestId(UuidUtil.getTimeBasedUuid().toString());
+        protocolMsg.setRequestId(newId());
         return protocolMsg;
     }
 
@@ -70,7 +71,7 @@ public class ProtocolMsg<T> {
         //set body
         protocolMsg.setBody(body);
         //reqId
-        protocolMsg.setRequestId(UuidUtil.getTimeBasedUuid().toString());
+        protocolMsg.setRequestId(newId());
         return protocolMsg;
     }
 
@@ -87,7 +88,7 @@ public class ProtocolMsg<T> {
         //set body
         protocolMsg.setBody(pinger);
         //reqId
-        protocolMsg.setRequestId(UuidUtil.getTimeBasedUuid().toString());
+        protocolMsg.setRequestId(newId());
         return protocolMsg;
     }
 
@@ -96,7 +97,7 @@ public class ProtocolMsg<T> {
      *
      * @return
      */
-    public static ProtocolMsg toEntity(ResultDTO resultDTO, CallerTaskDTO callerTaskDTO, String requestId) {
+    public static ProtocolMsg toEntity(ResultDTO resultDTO, CallerTaskDTO callerTaskDTO, Long requestId) {
         ProtocolMsg<RpcRequestDTO> protocolMsg = new ProtocolMsg<>(MsgTypeEnum.RESULT);
         //set resultDTO
         RpcRequestDTO rpcRequestDTO = new RpcRequestDTO();
@@ -126,7 +127,7 @@ public class ProtocolMsg<T> {
         //set body
         protocolMsg.setBody(rpcRequestDTO);
         //reqId
-        protocolMsg.setRequestId(UuidUtil.getTimeBasedUuid().toString());
+        protocolMsg.setRequestId(newId());
         return protocolMsg;
     }
 
@@ -145,8 +146,13 @@ public class ProtocolMsg<T> {
         //set body
         protocolMsg.setBody(rpcRequestDTO);
         //reqId
-        protocolMsg.setRequestId(UuidUtil.getTimeBasedUuid().toString());
+        protocolMsg.setRequestId(newId());
         return protocolMsg;
+    }
+
+    public static Long newId(){
+        longAdder.add(1);
+        return longAdder.longValue();
     }
 
     @Override

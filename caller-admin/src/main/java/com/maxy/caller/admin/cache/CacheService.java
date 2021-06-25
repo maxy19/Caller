@@ -5,6 +5,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.Tuple;
+import redis.clients.jedis.params.SetParams;
 
 import javax.annotation.Resource;
 import java.util.HashMap;
@@ -76,8 +77,15 @@ public class CacheService implements Cache {
         return jedisCluster.expire(key, expireTime);
     }
     @Override
-    public String set(String key, int expire, String value) {
+    public String setex(String key, int expire, String value) {
         return jedisCluster.setex(key, expire, value);
+    }
+    @Override
+    public String setnx(String key, int expire, String value) {
+        SetParams setParams = new SetParams();
+        setParams.nx();
+        setParams.ex(expire);
+        return jedisCluster.set(key, value,setParams);
     }
     @Override
     public void hmset(String key, Map<String, String> hash, int expire) {

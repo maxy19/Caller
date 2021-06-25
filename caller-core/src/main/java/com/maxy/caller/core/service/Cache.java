@@ -16,7 +16,9 @@ public interface Cache {
 
     Long expire(String key, int expireTime);
 
-    String set(String key, int expire, String value);
+    String setex(String key, int expire, String value);
+
+    String setnx(String key, int expire, String value);
 
     void hmset(String key, Map<String, String> hash, int expire);
 

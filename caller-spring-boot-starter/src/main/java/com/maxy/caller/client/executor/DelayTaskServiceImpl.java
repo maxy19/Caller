@@ -20,6 +20,7 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @Author maxy
@@ -38,7 +39,7 @@ public class DelayTaskServiceImpl implements DelayTaskService {
 
     @Override
     public boolean send(List<DelayTask> delayTasks, RetryConfig retryConfig) throws InterruptedException {
-        validate(delayTasks);
+        validate(delayTasks.stream().distinct().collect(Collectors.toList()));
         Channel channel = nettyClientHelper.getChannel();
         if (Objects.isNull(channel)) {
             log.error("send#无法获取channel信息.");

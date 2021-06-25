@@ -138,7 +138,7 @@ public class NettyServerHelper {
                 Preconditions.checkArgument(rpcFuture != null, "通过reqId没有找到对应的future信息..");
                 rpcFuture.getPromise().setSuccess(protocolMsg);
                 REQUEST_MAP.remove(protocolMsg.getRequestId());
-                log.info("resultEvent:耗时:reqId:{},{}", protocolMsg.getRequestId(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                log.info("resultEvent:reqId:{},耗时:{}", protocolMsg.getRequestId(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
             });
         });
         return this;
@@ -163,12 +163,12 @@ public class NettyServerHelper {
     }
 
 
-    public void removeNotActive(String uniqueName) {
+    public void removeNotActive(String groupName) {
         //去掉不活跃的
         List<Channel> collection = Lists.newArrayList();
-        List<Channel> channels = activeChannel.get(uniqueName);
+        List<Channel> channels = activeChannel.get(groupName);
         if (CollectionUtils.isEmpty(channels)) {
-            log.warn("removeNotActive#{}没有找到channel信息,不进行移除非活跃用户操作.", uniqueName);
+            log.warn("removeNotActive#{}没有找到channel信息,不进行移除非活跃用户操作.", groupName);
             return;
         }
         channels.removeIf(socketChannel -> {
@@ -176,7 +176,7 @@ public class NettyServerHelper {
                 collection.add(socketChannel);
                 ipChannelMapping.remove(parse(socketChannel));
                 log.warn("IP:{}被移除!!!", parse(socketChannel));
-                List<String> keys = Splitter.on(":").splitToList(uniqueName);
+                List<String> keys = Splitter.on(":").splitToList(groupName);
                 taskRegistryService.deleteByNotActive(keys.get(0), keys.get(1), parse(socketChannel.remoteAddress()));
                 return true;
             }

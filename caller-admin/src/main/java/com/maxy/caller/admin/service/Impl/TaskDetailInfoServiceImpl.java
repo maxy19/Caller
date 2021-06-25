@@ -136,7 +136,7 @@ public class TaskDetailInfoServiceImpl implements TaskDetailInfoService {
     }
 
     @Override
-    public boolean removeBackup(TaskDetailInfoBO taskDetailInfoBO) {
+    public boolean removeBackupCache(TaskDetailInfoBO taskDetailInfoBO) {
         long time = taskDetailInfoBO.getExecutionTime().getTime();
         String key = LIST_QUEUE_FORMAT_BACKUP.join(mod(time, config.getTotalSlot()));
         return cache.lrem(key, JSONUtils.toJSONString(taskDetailInfoBO)) > 0;
