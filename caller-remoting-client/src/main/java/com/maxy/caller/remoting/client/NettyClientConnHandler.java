@@ -104,8 +104,6 @@ public class NettyClientConnHandler extends ChannelDuplexHandler {
         if (channel.isActive()) {
             ProtocolMsg<Pinger> protocolMsg = ProtocolMsg.toEntity(System.currentTimeMillis(), regConfigInfo.getUniqName());
             channel.writeAndFlush(protocolMsg);
-        } else {
-            channel.closeFuture();
         }
     }
 
@@ -141,7 +139,6 @@ public class NettyClientConnHandler extends ChannelDuplexHandler {
                 }, 5, TimeUnit.SECONDS);
             }
         });
-        return;
     }
 }
 

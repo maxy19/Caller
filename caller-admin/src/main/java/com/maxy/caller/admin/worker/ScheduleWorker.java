@@ -141,13 +141,13 @@ public class ScheduleWorker implements AdminWorker {
 
     /**
      * 缓存详情任务信息
-     * 过期时间 = 距离执行时间+执行时间(10000-60000毫秒随机值)避免相同时间同时过期
+     * 过期时间 = 距离执行时间+执行时间(1-1000毫秒随机值)避免相同时间同时过期
      *
      * @param taskDetailInfoBO
      * @param time
      */
     private void cacheDetailTaskInfo(TaskDetailInfoBO taskDetailInfoBO, long time) {
-        long remainingTime = TimeUnit.MILLISECONDS.toSeconds(time - System.currentTimeMillis()) + TimeUnit.MILLISECONDS.toMillis(RandomUtils.nextInt(10000, 60000));
+        long remainingTime = TimeUnit.MILLISECONDS.toSeconds(time - System.currentTimeMillis()) + TimeUnit.MILLISECONDS.toMillis(RandomUtils.nextInt(1, 1000));
         //单个detail信息
         if (remainingTime - ONE_SECOND > 0) {
             cache.setex(DETAIL_TASK_INFO.join(taskDetailInfoBO.getId()), (int) remainingTime, JSONUtils.toJSONString(taskDetailInfoBO));
