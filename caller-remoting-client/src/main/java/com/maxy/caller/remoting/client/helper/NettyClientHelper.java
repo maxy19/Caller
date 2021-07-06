@@ -44,7 +44,7 @@ public class NettyClientHelper {
      */
     private Map<MsgTypeEnum, BiFunction<ProtocolMsg, Channel, Object>> eventMap = new ConcurrentHashMap();
     private ThreadPoolConfig threadPoolConfig = ThreadPoolConfig.getInstance();
-    private ExecutorService clientInvokeMethodExecutor = threadPoolConfig.getPublicThreadPoolExecutor(false, CLIENT_INVOKE_METHOD_THREAD_POOL);
+    private ExecutorService clientInvokeMethodExecutor = threadPoolConfig.getPublicThreadPoolExecutor(true, CLIENT_INVOKE_METHOD_THREAD_POOL);
 
     /**
      * 服务端客户端共有事件

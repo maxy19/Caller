@@ -40,8 +40,8 @@ public interface CommonService {
     String ALARM_EMAIL = "alarmEmail";
     String STRATEGY_VALUE = "strategyValue";
     String NULL_STR = "NULL";
-    int ONE_MINUTE = 60;
-    int TWO_MINUTE = 2 * 60;
+    int ONE_MINUTE = 60 * 1000;
+    int TWO_MINUTE = 2 * ONE_MINUTE;
     int ONE_MILLISECOND = 1;
     int ONE_SECOND = ONE_MILLISECOND * 1000;
     int ONE_HOUR = ONE_MINUTE * 60;
@@ -49,4 +49,8 @@ public interface CommonService {
     int THREE_DAY = 3 * ONE_HOUR * 24;
     int SERVER_DAY = 7 * ONE_HOUR * 24;
     int TEN_MINUTE_OF_SECOND = 10 * 60 * 1000;
+
+    byte LOCK_DEFAULT = -1;
+    byte LOCK_SUCCESS = 1;
+    byte LOCK_FAIL = 0;
 }

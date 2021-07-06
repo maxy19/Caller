@@ -31,7 +31,7 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<ProtocolMsg>
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ProtocolMsg msg) {
-        log.info("客户端读取信息:{}", msg);
+        log.info("客户端读取信息.请求Id:{}", msg.getRequestId());
         BiFunction<ProtocolMsg, Channel, Object> consumer = nettyClientHelper.getEventMap().get(msg.getMsgTypeEnum());
         if (consumer != null) {
             consumer.apply(msg, ctx.channel());
