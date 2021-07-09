@@ -111,8 +111,8 @@ public class DefaultKryoContext {
             return null;
         }
         Kryo kryo = kryoPool.obtain();
-        try {
-            Input input = new Input(new ByteBufInputStream(in));
+        ByteBufInputStream byteBufInputStream = new ByteBufInputStream(in);
+        try (Input input = new Input(byteBufInputStream);){
             return kryo.readClassAndObject(input);
         } finally {
             kryoPool.free(kryo);
