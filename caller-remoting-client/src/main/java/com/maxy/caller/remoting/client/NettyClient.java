@@ -2,23 +2,18 @@ package com.maxy.caller.remoting.client;
 
 import com.maxy.caller.core.netty.AbstractNettyRemoting;
 import com.maxy.caller.core.netty.config.NettyClientConfig;
-import com.maxy.caller.core.netty.serializer.kryo.KryoDecode;
-import com.maxy.caller.core.netty.serializer.kryo.KryoEncode;
 import com.maxy.caller.pojo.RegConfigInfo;
 import com.maxy.caller.pojo.Value;
+import com.maxy.caller.remoting.client.kryo.KryoClientChannelInitializer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.timeout.IdleStateHandler;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +22,6 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static com.maxy.caller.core.constant.ThreadConstant.CLIENT_HANDLE_THREAD_POOL;
 
@@ -69,20 +63,11 @@ public class NettyClient extends AbstractNettyRemoting {
                 .option(ChannelOption.SO_RCVBUF, nettyClientConfig.getClientSocketRcvBufSize())
                 .option(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(nettyClientConfig.getDefaultLowWaterMark(), nettyClientConfig.getDefaultHighWaterMark()))
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .handler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    protected void initChannel(SocketChannel ch) throws Exception {
-                        ch.pipeline()
-                                .addLast(defaultEventExecutorGroup,
-                                        new KryoEncode(),
-                                        new KryoDecode(),
-                                        new IdleStateHandler(0, 0, nettyClientConfig.getClientChannelMaxIdleTimeSeconds(), TimeUnit.SECONDS),
-                                        new ReadTimeoutHandler(3 * nettyClientConfig.getClientChannelMaxIdleTimeSeconds()),
-                                        nettyClientConnHandler,
-                                        nettyClientHandler);
-
-                    }
-                });
+                .handler(KryoClientChannelInitializer.builder().nettyClientHandler(nettyClientHandler)
+                                                               .nettyClientConnHandler(nettyClientConnHandler)
+                                                               .defaultEventExecutorGroup(defaultEventExecutorGroup)
+                                                               .nettyClientConfig(nettyClientConfig)
+                                                               .build());
         try {
             this.bootstrap = bootstrap;
             for (RegConfigInfo.AddressInfo addressInfo : addressInfos) {

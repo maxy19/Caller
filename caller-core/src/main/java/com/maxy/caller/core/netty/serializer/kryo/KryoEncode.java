@@ -13,7 +13,7 @@ public class KryoEncode extends MessageToByteEncoder {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) throws Exception {
-        DefaultKryoContext.get().serialze(msg,out);
+        DefaultKryoContext.serialze(msg, out);
         ctx.flush();
     }
 }

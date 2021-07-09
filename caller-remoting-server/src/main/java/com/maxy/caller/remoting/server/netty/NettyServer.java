@@ -3,13 +3,10 @@ package com.maxy.caller.remoting.server.netty;
 import com.maxy.caller.common.utils.RemotingUtil;
 import com.maxy.caller.core.netty.AbstractNettyRemoting;
 import com.maxy.caller.core.netty.config.NettyServerConfig;
-import com.maxy.caller.core.netty.serializer.kryo.KryoDecode;
-import com.maxy.caller.core.netty.serializer.kryo.KryoEncode;
+import com.maxy.caller.remoting.server.netty.kryo.KryoServerChannelInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.WriteBufferWaterMark;
@@ -18,8 +15,6 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.timeout.IdleStateHandler;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +22,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.maxy.caller.core.constant.ThreadConstant.SERVER_HANDLE_THREAD_POOL;
@@ -157,20 +151,12 @@ public class NettyServer extends AbstractNettyRemoting {
                  */
                 .childOption(ChannelOption.TCP_NODELAY, true)
                 .localAddress(inetSocketAddress)
-                .childHandler(new ChannelInitializer() {
-                    @Override
-                    protected void initChannel(Channel ch) throws Exception {
-                        //心跳检测
-                        ch.pipeline().addLast(defaultEventExecutorGroup,
-                                        new KryoEncode(),
-                                        new KryoDecode(),
-                                        new IdleStateHandler(0, 0, nettyServerConfig.getServerChannelMaxIdleTimeSeconds(), TimeUnit.SECONDS),
-                                        new ReadTimeoutHandler(3 * nettyServerConfig.getServerChannelMaxIdleTimeSeconds()),
-                                        nettyServerConnHandler,
-                                        nettyServerHandler);
-                    }
-                });
-
+                .childHandler(KryoServerChannelInitializer.builder()
+                             .nettyServerHandler(nettyServerHandler)
+                             .nettyServerConnHandler(nettyServerConnHandler)
+                             .defaultEventExecutorGroup(defaultEventExecutorGroup)
+                             .nettyServerConfig(nettyServerConfig)
+                             .build());
         if (nettyServerConfig.isServerPooledByteBufAllocatorEnable()) {
             bootstrap.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
         }
