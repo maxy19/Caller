@@ -15,7 +15,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.concurrent.atomic.LongAdder;
+
+import static com.maxy.caller.core.utils.CallerUtils.newId;
 
 
 /**
@@ -33,7 +34,6 @@ public class ProtocolMsg<T> {
     private Long requestId;
     private MsgTypeEnum msgTypeEnum;
     private T body;
-    private static LongAdder longAdder = new LongAdder();
 
     public ProtocolMsg(MsgTypeEnum msgTypeEnum) {
         this.msgTypeEnum = msgTypeEnum;
@@ -148,11 +148,6 @@ public class ProtocolMsg<T> {
         //reqId
         protocolMsg.setRequestId(newId());
         return protocolMsg;
-    }
-
-    public static Long newId(){
-        longAdder.add(1);
-        return longAdder.longValue();
     }
 
     @Override

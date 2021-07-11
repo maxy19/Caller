@@ -17,6 +17,7 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
@@ -26,6 +27,12 @@ import java.util.stream.Collectors;
 public class CallerUtils {
 
     private CallerUtils() {
+    }
+
+    private static AtomicLong atomicLong = new AtomicLong();
+
+    public static Long newId(){
+        return atomicLong.incrementAndGet();
     }
 
     public static String parse(final Channel channel) {

@@ -47,6 +47,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import static com.maxy.caller.core.common.RpcHolder.REQUEST_MAP;
+import static com.maxy.caller.core.constant.ThreadConstant.HANDLE_CALLBACK_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.SERVER_HEART_RESP_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.SERVER_RESP_RESULT_THREAD_POOL;
 import static com.maxy.caller.core.constant.ThreadConstant.SERVER_SAVE_REG_THREAD_POOL;
@@ -95,6 +96,7 @@ public class NettyServerHelper implements CommonService {
     private ExecutorService saveRegExecutor = ThreadPoolConfig.getInstance().getSingleThreadExecutor(true, SERVER_SAVE_REG_THREAD_POOL);
     private ExecutorService heartRespExecutor = ThreadPoolConfig.getInstance().getSingleThreadExecutor(true, SERVER_HEART_RESP_THREAD_POOL);
     private ExecutorService respResultExecutor = ThreadPoolConfig.getInstance().getPublicThreadPoolExecutor(true, SERVER_RESP_RESULT_THREAD_POOL);
+    private ExecutorService handleCallbackResultExecutor = ThreadPoolConfig.getInstance().getPublicThreadPoolExecutor(true, HANDLE_CALLBACK_THREAD_POOL);
 
     /**
      * 服务端客户端共有事件
@@ -152,8 +154,8 @@ public class NettyServerHelper implements CommonService {
             respResultExecutor.execute(() -> {
                 Stopwatch stopwatch = Stopwatch.createStarted();
                 Byte newVal = REQUEST_MAP.computeIfPresent(protocolMsg.getRequestId(), (k, v) -> v == LOCK_DEFAULT ? LOCK_SUCCESS : v);
-                if(Objects.equals(newVal, LOCK_SUCCESS)) {
-                    log.info("resultEvent#收到客户端响应.请求Id:{}", protocolMsg.getRequestId());
+                if (Objects.equals(newVal, LOCK_SUCCESS)) {
+                    log.info("resultEvent#获得锁并处理客户端返回数据.请求Id:{}", protocolMsg.getRequestId());
                     getHandleCallback().accept(protocolMsg, channel);
                     //抢锁成功再删除
                     REQUEST_MAP.remove(protocolMsg.getRequestId());
@@ -222,20 +224,22 @@ public class NettyServerHelper implements CommonService {
      * callback 处理
      */
     private BiConsumer<ProtocolMsg, Channel> handleCallback = ((response, channel) -> {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        RpcRequestDTO request = (RpcRequestDTO) getRequest(response);
-        CallerTaskDTO dto = request.getCallerTaskDTO();
-        TaskDetailInfoBO taskDetailInfoBO = getDetailTask(dto);
-        if (Objects.isNull(taskDetailInfoBO)) {
-            throw new BusinessException(FOUND_NOT_EXECUTE_INFO);
-        }
-        taskDetailInfoService.removeBackupCache(taskDetailInfoBO);
-        ResultDTO resultDTO = request.getResultDTO();
-        taskDetailInfoBO.setExecutionStatus(resultDTO.isSuccess() ? EXECUTION_SUCCEED.getCode() : EXECUTION_FAILED.getCode());
-        taskDetailInfoBO.setErrorMsg(resultDTO.getMessage());
-        taskDetailInfoService.update(taskDetailInfoBO);
-        taskLogService.saveClientResult(taskDetailInfoBO, resultDTO.getMessage(), parse(channel));
-        log.info("handleCallback#耗时:{}", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        handleCallbackResultExecutor.execute(() -> {
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            RpcRequestDTO request = (RpcRequestDTO) getRequest(response);
+            CallerTaskDTO dto = request.getCallerTaskDTO();
+            TaskDetailInfoBO taskDetailInfoBO = getDetailTask(dto);
+            if (Objects.isNull(taskDetailInfoBO)) {
+                throw new BusinessException(FOUND_NOT_EXECUTE_INFO);
+            }
+            taskDetailInfoService.removeBackupCache(taskDetailInfoBO);
+            ResultDTO resultDTO = request.getResultDTO();
+            taskDetailInfoBO.setExecutionStatus(resultDTO.isSuccess() ? EXECUTION_SUCCEED.getCode() : EXECUTION_FAILED.getCode());
+            taskDetailInfoBO.setErrorMsg(resultDTO.getMessage());
+            taskDetailInfoService.update(taskDetailInfoBO);
+            taskLogService.saveClientResult(taskDetailInfoBO, resultDTO.getMessage(), parse(channel));
+            log.info("handleCallback#耗时:{}", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        });
     });
 
     /**
